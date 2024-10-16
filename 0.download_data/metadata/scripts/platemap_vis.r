@@ -54,45 +54,42 @@ for (plate in names(platemap_dfs)) {
     print(head(platemap_dfs[[plate]]))
 }
 
+# Color-blind friendly and most distinct color palette
+okabe_ito <- c(
+    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#8DA0CB", 
+    "#D55E00", "#CC79A7", "#999999", "#A6CEE3", "#1F78B4", 
+    "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", 
+    "#FF7F00", "#CAB2D6"
+)
+
 for (plate in names(platemap_dfs)) {
-    # Output for each plate
     output_file <- output_platemap_files[[plate]]
-    
-    # Create the platemap plot
-    platemap <-
-        platetools::raw_map(
-            data = platemap_dfs[[plate]]$treatment,
-            well = platemap_dfs[[plate]]$well_position,
-            plate = 96,
-            size = 10 # Shape size in the plot
-        ) +
+    platemap <- platetools::raw_map(
+        data = platemap_dfs[[plate]]$treatment,
+        well = platemap_dfs[[plate]]$well_position,
+        plate = 96,
+        size = 10
+    ) +
         ggtitle(paste("Platemap layout for plate", plate)) +
         theme(
             plot.title = element_text(size = 10, face = "bold"),
-            legend.position = "right",          # Position legends on the right
-            legend.box = "vertical",             # Align legends vertically
-            legend.spacing.y = unit(0.5, "cm"),  # Space between legend items vertically
-            legend.margin = margin(t = 0, b = 5, unit = "pt"),  # Adjust margins
-            legend.text = element_text(size = 8),  # Decrease font size for legend text
-            legend.title = element_text(size = 9)  # Decrease font size for legend title
+            legend.position = "right",
+            legend.box = "vertical",
+            legend.spacing.y = unit(0.5, "cm"),
+            legend.margin = margin(t = 0, b = 5, unit = "pt"),
+            legend.text = element_text(size = 8),
+            legend.title = element_text(size = 9)
         ) +
-        geom_point(
-            aes(shape = platemap_dfs[[plate]]$dose)  # Keep only the dose shape
-        ) +
+        geom_point(aes(shape = platemap_dfs[[plate]]$dose)) +
         scale_shape_discrete(name = "Dose") +
-        scale_fill_discrete(name = "Treatment") +  # Manual color scale for treatment
+        scale_fill_manual(values = okabe_ito, name = "Treatment") +  # Use Okabe-Ito palette
         guides(
-            shape = guide_legend(order = 2, nrow = 1, override.aes = list(size = 3)),  # Horizontal dose legend
-            fill = guide_legend(order = 1, ncol = 2, override.aes = list(size = 3))   # Treatment legend with 2 columns
+            shape = guide_legend(order = 2, nrow = 1, override.aes = list(size = 3)),
+            fill = guide_legend(order = 1, ncol = 2, override.aes = list(size = 3))
         )
 
-    # Save the plot with adjusted dimensions
-    ggsave(
-        output_file,
-        platemap,
-        device = 'png',
-        dpi = 500,
-        height = 4,  # Adjusted height
-        width = 8   # Adjusted width
-    )
+    ggsave(output_file, platemap, device = 'png', dpi = 500, height = 4, width = 8)
 }
+
+
+

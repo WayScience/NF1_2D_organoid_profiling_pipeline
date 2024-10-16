@@ -1,6 +1,6 @@
 # GFF NF1 organoid image profiling
 
-In this repository, we perform image analysis and image-based profiling on NF1 organoids derived from patients that have been treated with a modified Cell Painting assay.
+In this repository, we perform image analysis and image-based profiling on NF1 organoids derived from patients treated with a modified Cell Painting assay.
 
 ## Preliminary data
 
