@@ -2,6 +2,14 @@
 
 In this repository, we perform image analysis and image-based profiling on NF1 organoids derived from patients treated with a modified Cell Painting assay.
 
+In our assay, we have the following channels:
+
+- 405 = nucleus (Hoechst)
+- 488 = endoplasmic reticulum (ER)
+- 555 = actin, Golgi, and plasma membrane (AGP)
+- 640 = mitochondria (Mito)
+- TRANS = Brightfield
+
 ## Preliminary data
 
 We have collected a preliminary plate of data with includes NF1 organoids derived from patients, which contain multiple different cell types (e.g., Schwann cells, fibroblasts, etc.).
