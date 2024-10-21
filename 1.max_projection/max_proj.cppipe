@@ -1,0 +1,209 @@
+CellProfiler Pipeline: http://www.cellprofiler.org
+Version:5
+DateRevision:428
+GitHash:
+ModuleCount:14
+HasImagePlaneDetails:False
+
+Images:[module_num:1|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['Images will be loaded in via headless mode, we only use this module for two things:', '', '1. Test the pipeline in the GUI', '2. To set the filtering criteria to remove the Merge channel since it is not indicative of biology (composite)']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    :
+    Filter images?:Custom
+    Select the rule criteria:and (extension does isimage) (file doesnot contain "Merge")
+
+Metadata:[module_num:2|svn_version:'Unknown'|variable_revision_number:6|show_window:False|notes:['Extract metadata for potential use downstream.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Extract metadata?:Yes
+    Metadata data type:Text
+    Metadata types:{}
+    Extraction method count:1
+    Metadata extraction method:Extract from file/folder names
+    Metadata source:File name
+    Regular expression to extract from file name:(?P<Well>[A-Z]{1}[0-9]{1,2})-(?P<Site>[0-9]{1})_(?P<Channel>[0-9]{3}|TRANS)_(?P<Zslice>ZS[0-9]{3})
+    Regular expression to extract from folder name:(?P<Date>[0-9]{4}_[0-9]{2}_[0-9]{2})$
+    Extract metadata from:All images
+    Select the filtering criteria:and (file does contain "")
+    Metadata file location:Elsewhere...|
+    Match file and image metadata:[]
+    Use case insensitive matching?:No
+    Metadata file name:None
+    Does cached metadata exist?:No
+
+NamesAndTypes:[module_num:3|svn_version:'Unknown'|variable_revision_number:8|show_window:False|notes:['Assign channels to the respective images:', '', '405 = Hoechst, 488 = ER, 555 = AGP, 640 = Mito, TRANS = Brightfield']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Assign a name to:Images matching rules
+    Select the image type:Grayscale image
+    Name to assign these images:DNA
+    Match metadata:[]
+    Image set matching method:Order
+    Set intensity range from:Image metadata
+    Assignments count:5
+    Single images count:0
+    Maximum intensity:255.0
+    Process as 3D?:No
+    Relative pixel spacing in X:1.0
+    Relative pixel spacing in Y:1.0
+    Relative pixel spacing in Z:1.0
+    Select the rule criteria:and (file does contain "405")
+    Name to assign these images:Hoechst
+    Name to assign these objects:Cell
+    Select the image type:Grayscale image
+    Set intensity range from:Image metadata
+    Maximum intensity:255.0
+    Select the rule criteria:and (file does contain "488")
+    Name to assign these images:ER
+    Name to assign these objects:Nucleus
+    Select the image type:Grayscale image
+    Set intensity range from:Image metadata
+    Maximum intensity:255.0
+    Select the rule criteria:and (file does contain "555")
+    Name to assign these images:AGP
+    Name to assign these objects:Cytoplasm
+    Select the image type:Grayscale image
+    Set intensity range from:Image metadata
+    Maximum intensity:255.0
+    Select the rule criteria:and (file does contain "640")
+    Name to assign these images:Mito
+    Name to assign these objects:Speckle
+    Select the image type:Grayscale image
+    Set intensity range from:Image metadata
+    Maximum intensity:255.0
+    Select the rule criteria:and (file does contain "TRANS")
+    Name to assign these images:Brightfield
+    Name to assign these objects:Object1
+    Select the image type:Grayscale image
+    Set intensity range from:Image metadata
+    Maximum intensity:255.0
+
+Groups:[module_num:4|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['Split images into image sets based on Well and Site so all z-slices can be max-projected together. There are different number of Z-slices per image set.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Do you want to group your images?:Yes
+    grouping metadata count:2
+    Metadata category:Well
+    Metadata category:Site
+
+MakeProjection:[module_num:5|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['Maximum projection for Hoechst channel.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the input image:Hoechst
+    Type of projection:Maximum
+    Name the output image:MaxHoechst
+    Frequency:6.0
+
+SaveImages:[module_num:6|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:['Save Hoechst channel max-projection images.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the type of image to save:Image
+    Select the image to save:MaxHoechst
+    Select method for constructing file names:From image filename
+    Select image name for file prefix:Hoechst
+    Enter single file name:OrigBlue
+    Number of digits:4
+    Append a suffix to the image file name?:No
+    Text to append to the image name:
+    Saved file format:tiff
+    Output file location:Default Output Folder|
+    Image bit depth:16-bit integer
+    Overwrite existing files without warning?:No
+    When to save:Last cycle
+    Record the file and path information to the saved image?:No
+    Create subfolders in the output folder?:No
+    Base image folder:Elsewhere...|
+    How to save the series:T (Time)
+    Save with lossless compression?:Yes
+
+MakeProjection:[module_num:7|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['Maximum projection for ER channel.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the input image:ER
+    Type of projection:Maximum
+    Name the output image:MaxER
+    Frequency:6.0
+
+SaveImages:[module_num:8|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:['Save ER channel max-projection images.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the type of image to save:Image
+    Select the image to save:MaxER
+    Select method for constructing file names:From image filename
+    Select image name for file prefix:ER
+    Enter single file name:OrigBlue
+    Number of digits:4
+    Append a suffix to the image file name?:No
+    Text to append to the image name:
+    Saved file format:tiff
+    Output file location:Default Output Folder|
+    Image bit depth:16-bit integer
+    Overwrite existing files without warning?:No
+    When to save:Last cycle
+    Record the file and path information to the saved image?:No
+    Create subfolders in the output folder?:No
+    Base image folder:Elsewhere...|
+    How to save the series:T (Time)
+    Save with lossless compression?:Yes
+
+MakeProjection:[module_num:9|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['Maximum projection for AGP channel.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the input image:AGP
+    Type of projection:Maximum
+    Name the output image:MaxAGP
+    Frequency:6.0
+
+SaveImages:[module_num:10|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:['Save AGP channel max-projection images.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the type of image to save:Image
+    Select the image to save:MaxAGP
+    Select method for constructing file names:From image filename
+    Select image name for file prefix:AGP
+    Enter single file name:OrigBlue
+    Number of digits:4
+    Append a suffix to the image file name?:No
+    Text to append to the image name:
+    Saved file format:tiff
+    Output file location:Default Output Folder|
+    Image bit depth:16-bit integer
+    Overwrite existing files without warning?:No
+    When to save:Last cycle
+    Record the file and path information to the saved image?:No
+    Create subfolders in the output folder?:No
+    Base image folder:Elsewhere...|
+    How to save the series:T (Time)
+    Save with lossless compression?:Yes
+
+MakeProjection:[module_num:11|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['Maximum projection for Mito channel.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the input image:Mito
+    Type of projection:Maximum
+    Name the output image:MaxMito
+    Frequency:6.0
+
+SaveImages:[module_num:12|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:['Save Mito channel max-projection images.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the type of image to save:Image
+    Select the image to save:MaxMito
+    Select method for constructing file names:From image filename
+    Select image name for file prefix:Mito
+    Enter single file name:OrigBlue
+    Number of digits:4
+    Append a suffix to the image file name?:No
+    Text to append to the image name:
+    Saved file format:tiff
+    Output file location:Default Output Folder|
+    Image bit depth:16-bit integer
+    Overwrite existing files without warning?:No
+    When to save:Last cycle
+    Record the file and path information to the saved image?:No
+    Create subfolders in the output folder?:No
+    Base image folder:Elsewhere...|
+    How to save the series:T (Time)
+    Save with lossless compression?:Yes
+
+MakeProjection:[module_num:13|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['Maximum projection for the Brightfield channel.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the input image:Brightfield
+    Type of projection:Maximum
+    Name the output image:MaxBrightfield
+    Frequency:6.0
+
+SaveImages:[module_num:14|svn_version:'Unknown'|variable_revision_number:16|show_window:False|notes:['Save Brightfield channel max-projection images.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select the type of image to save:Image
+    Select the image to save:MaxBrightfield
+    Select method for constructing file names:From image filename
+    Select image name for file prefix:Brightfield
+    Enter single file name:OrigBlue
+    Number of digits:4
+    Append a suffix to the image file name?:No
+    Text to append to the image name:
+    Saved file format:tiff
+    Output file location:Default Output Folder|
+    Image bit depth:16-bit integer
+    Overwrite existing files without warning?:No
+    When to save:Last cycle
+    Record the file and path information to the saved image?:No
+    Create subfolders in the output folder?:No
+    Base image folder:Elsewhere...|
+    How to save the series:T (Time)
+    Save with lossless compression?:Yes

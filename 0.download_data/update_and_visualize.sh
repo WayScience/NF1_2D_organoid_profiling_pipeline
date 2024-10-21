@@ -9,7 +9,7 @@ conda activate gff_preprocessing_env
 jupyter nbconvert --to script --output-dir=scripts/ *.ipynb
 
 # # run Python script for upating image file structure
-# python scripts/update_file_structure.py
+python scripts/update_file_structure.py
 
 # Deactivate environment and activate R environment
 conda deactivate
