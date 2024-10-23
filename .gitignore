@@ -7,6 +7,9 @@ log*
 # Ignore max-projected images
 Max_Projected_Images*
 
+# Ignore illum corrected images
+Corrected_Images*
+
 # PYTHON RELATED IGNORED FILES
 #######################################
 # Byte-compiled / optimized / DLL files
