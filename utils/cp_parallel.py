@@ -86,7 +86,7 @@ def run_cellprofiler_parallel(
         # make output directory if it is not already created
         pathlib.Path(path_to_output).mkdir(exist_ok=True)
 
-        # creates a command for each plate in the list
+        # Build command for each plate
         command = [
             "cellprofiler",
             "-c",
@@ -98,7 +98,9 @@ def run_cellprofiler_parallel(
             "-i",
             path_to_images,
         ]
-        # creates a list of commands
+        # add extension to command if using a plugin module in pipeline (must be include in dict)
+        if "plugins_directory" in info:
+            command.extend(["--plugins-directory", info["plugins_directory"]])
         commands.append(command)
 
     # set the number of CPUs/workers as the number of commands
