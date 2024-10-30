@@ -10,6 +10,9 @@ Max_Projected_Images*
 # Ignore illum corrected images
 Corrected_Images*
 
+# Ignore SQLite output from CellProfiler analysis (too large >50GB)
+sqlite_output*
+
 # PYTHON RELATED IGNORED FILES
 #######################################
 # Byte-compiled / optimized / DLL files
