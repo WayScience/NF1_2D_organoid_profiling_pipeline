@@ -10,8 +10,14 @@ Max_Projected_Images*
 # Ignore illum corrected images
 Corrected_Images*
 
-# Ignore SQLite output from CellProfiler analysis (too large >50GB)
+# Ignore SQLite output from CellProfiler analysis (might add later)
 sqlite_output*
+
+# Ignore parquet file outputs (might add later)
+4.preprocess_features/data*
+
+# Ignore logs from the CytoTable output
+runinfo*
 
 # PYTHON RELATED IGNORED FILES
 #######################################

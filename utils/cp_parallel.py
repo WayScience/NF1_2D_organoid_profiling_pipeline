@@ -26,24 +26,31 @@ def results_to_log(
         log_dir (pathlib.Path): directory for log files
         run_name (str): a given name for the type of CellProfiler run being done on the plates (example: whole image features)
     """
-    # Access the command (args) and stderr (output) for each CompletedProcess object
+    # Set up logging format
+    log_format = "[%(asctime)s] [Process ID: %(process)d] %(message)s"
+
+    # Run through each result to make individual log files
     for result in results:
-        # assign plate name and decode the CellProfiler output to use in log file
         plate_name = result.args[6].name
         output_string = result.stderr.decode("utf-8")
 
-        # set log file name as plate name from command
-        log_file_path = pathlib.Path(f"{log_dir}/{plate_name}_{run_name}_run.log")
-        # print output to a log file for each plate to view after the run
-        # set up logging configuration
-        log_format = "[%(asctime)s] [Process ID: %(process)d] %(message)s"
-        logging.basicConfig(
-            filename=log_file_path, level=logging.INFO, format=log_format
-        )
+        # Set up a unique logger for each plate/process
+        logger = logging.getLogger(f"logger_{plate_name}")
+        log_file_path = log_dir / f"{plate_name}_{run_name}_run.log"
 
-        # log plate name and output string
-        logging.info(f"Plate Name: {plate_name}")
-        logging.info(f"Output String: {output_string}")
+        # Create file handler for the current process's log file
+        file_handler = logging.FileHandler(log_file_path)
+        file_handler.setFormatter(logging.Formatter(log_format))
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.INFO)
+
+        # Log the results
+        logger.info(f"Plate Name: {plate_name}")
+        logger.info(f"Output String: {output_string}")
+
+        # Clean up to prevent logging duplication
+        logger.removeHandler(file_handler)
+        file_handler.close()
 
 
 def run_cellprofiler_parallel(
