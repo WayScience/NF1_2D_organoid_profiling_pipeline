@@ -77,12 +77,12 @@ for plate in cp_dfs:
     print("UMAP embeddings being generated for", plate_name)
 
     # Set compartments based on the second part of the plate name
-    if plate_name_parts[1] == "sc":
-        compartments = ["nuclei", "cells", "cytoplasm"]
-    elif plate_name_parts[1] == "organoid":
-        compartments = ["organoids"]
-    else:
-        compartments = []  # or handle other cases if necessary
+    compartments = [
+        compartment for profile_type, compartment in [
+            ("sc", ["nuclei", "cells", "cytoplasm"]),
+            ("organoid", ["organoids"])
+        ] if plate_name_parts[1] == profile_type
+    ]
 
     # Continue with UMAP processing
     umap_fit = umap.UMAP(random_state=umap_random_seed, n_components=umap_n_components, n_jobs=1)

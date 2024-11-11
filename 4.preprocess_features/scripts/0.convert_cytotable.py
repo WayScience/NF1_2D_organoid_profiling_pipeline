@@ -86,6 +86,15 @@ print("All plates have been converted with cytotable!")
 # Directory with converted profiles
 converted_dir = pathlib.Path(f"{output_dir}/converted_profiles")
 
+# Define the list of columns to prioritize and prefix
+prioritized_columns = [
+    "Nuclei_Location_Center_X",
+    "Nuclei_Location_Center_Y",
+    "Cells_Location_Center_X",
+    "Cells_Location_Center_Y",
+    "Image_Count_Cells"
+]
+
 for file_path in converted_dir.iterdir():
     # Load the DataFrame from the Parquet file
     df = pd.read_parquet(file_path)
@@ -95,27 +104,9 @@ for file_path in converted_dir.iterdir():
     
     # Rearrange columns and add "Metadata" prefix in one line
     df = df[
-        [
-            "Nuclei_Location_Center_X",
-            "Nuclei_Location_Center_Y",
-            "Cells_Location_Center_X",
-            "Cells_Location_Center_Y",
-            "Image_Count_Cells",
-        ]
-        + [col for col in df.columns if col not in [
-            "Nuclei_Location_Center_X",
-            "Nuclei_Location_Center_Y",
-            "Cells_Location_Center_X",
-            "Cells_Location_Center_Y",
-            "Image_Count_Cells"]]
+        prioritized_columns + [col for col in df.columns if col not in prioritized_columns]
     ].rename(
-        columns=lambda col: "Metadata_" + col if col in [
-            "Nuclei_Location_Center_X",
-            "Nuclei_Location_Center_Y",
-            "Cells_Location_Center_X",
-            "Cells_Location_Center_Y",
-            "Image_Count_Cells"
-        ] else col
+        columns=lambda col: "Metadata_" + col if col in prioritized_columns else col
     )
 
     # Save the processed DataFrame as Parquet in the same path

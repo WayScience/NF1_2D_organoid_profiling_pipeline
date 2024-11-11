@@ -82,6 +82,12 @@ pprint.pprint(plate_info_dictionary, indent=4)
 # In[4]:
 
 
+# Map for how to rename Metadata columns (remove Image_ prefix)
+column_name_mapping = {
+    "Image_Metadata_Site": "Metadata_Site",
+    "Image_Metadata_ZSlice": "Metadata_ZSlice"
+}
+
 for plate, info in plate_info_dictionary.items():
     print(f"Performing pycytominer pipeline for {plate}")
 
@@ -115,12 +121,7 @@ for plate, info in plate_info_dictionary.items():
             # Load the annotated parquet file to fix metadata columns names
             annotated_df = pd.read_parquet(output_annotated_file)
 
-            # Rename columns using the rename() function
-            column_name_mapping = {
-                "Image_Metadata_Site": "Metadata_Site",
-                "Image_Metadata_ZSlice": "Metadata_ZSlice"
-            }
-
+            # Rename metadata columns using the rename() function
             annotated_df.rename(columns=column_name_mapping, inplace=True)
 
             # Save the modified DataFrame back to the same location
