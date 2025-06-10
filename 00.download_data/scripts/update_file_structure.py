@@ -2,8 +2,8 @@
 # coding: utf-8
 
 # # Copy raw images into one folder to use for CellProfiler processing
-# 
-# Currently, the images are located nest deep within multiple folders. 
+#
+# Currently, the images are located nest deep within multiple folders.
 # For best practices, we will copy the images (preserving metadata) to one folder that can be used for CellProfiler processing.
 
 # ## Import libraries
@@ -11,9 +11,8 @@
 # In[1]:
 
 
-from pathlib import Path
 import shutil
-
+from pathlib import Path
 
 # ## Set paths and variables
 
@@ -38,10 +37,9 @@ image_extensions = {".tif", ".tiff"}
 # In[3]:
 
 
-for image_file in parent_dir.rglob('*/*/*/*'): # goes into third nested folder
+for image_file in parent_dir.rglob("*/*/*/*"):  # goes into third nested folder
     if image_file.is_file() and image_file.suffix.lower() in image_extensions:
         destination = nf0014_dir / image_file.name
         shutil.copy2(image_file, destination)  # copy2 preserves metadata
 
 print("All images have been copied to the NF0014 folder!")
-

@@ -20,7 +20,7 @@ We use R, specifically the `platetools` library to generate these plots and save
 
 To perform both tasks as mentioned above, use the [update_and_visualize.sh script](./update_and_visualize.sh) using the command below:
 
-*NOTE*: There could be issues with running the R script in terminal (like issues with saving with `ggsave`), so please be prepared for any troubleshooting or just use the jupyter notebook by itself with the R environment.
+_NOTE_: There could be issues with running the R script in terminal (like issues with saving with `ggsave`), so please be prepared for any troubleshooting or just use the jupyter notebook by itself with the R environment.
 
 ```bash
 # make sure you are in the 0.download_data directory
