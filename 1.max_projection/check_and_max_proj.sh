@@ -6,14 +6,15 @@ conda init bash
 conda activate gff_preprocessing_env
 
 # convert Jupyter notebooks to scripts
-jupyter nbconvert --to script --output-dir=scripts/ *.ipynb
+jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
+cd scripts || exit
 # run Python script for checking for incomplete sets and cleaning
-python scripts/0.check_incomplete_sets.py
+python 0.cp_max_projection.py
+python 1.get_the_middle_slice.py
 
-# deactivate preprocessing env and activate CellProfiler env
 conda deactivate
-conda activate gff_cp_env
 
-# run Python script for performing max-projection with CellProfiler
-python scripts/1.cp_max_projection.py
+cd .. || exit
+
+echo "All scripts executed successfully."

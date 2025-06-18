@@ -14,10 +14,10 @@ platemap_suffix <- "_platemap_figure.png"
 # Define output figure paths
 output_platemap_files <- list()
 for (platemap_file in platemap_files) {
-    # Extract plate name and remove suffix 
+    # Extract plate name and remove suffix
     plate <- basename(platemap_file)
-    plate <- stringr::str_remove(plate, "_platemap.csv") 
-    
+    plate <- stringr::str_remove(plate, "_platemap.csv")
+
     output_platemap_files[[plate]] <- file.path(output_fig_dir, paste0(plate, platemap_suffix))
 }
 
@@ -28,13 +28,13 @@ platemap_dfs <- list()
 for (plate in names(output_platemap_files)) {
     # Find the platemap file associated with the plate
     platemap_file <- platemap_files[stringr::str_detect(platemap_files, plate)]
-    
+
     # Load in the platemap data
     df <- readr::read_csv(
         platemap_file,
         col_types = readr::cols(.default = "c")
     )
-    
+
     # Update 'Dose' column
     df <- df %>%
         mutate(
@@ -43,9 +43,9 @@ for (plate in names(output_platemap_files)) {
                 TRUE ~ paste0(dose, " uM")
             )
         )
-    
+
     # Store the updated data frame
-    platemap_dfs[[plate]] <- df 
+    platemap_dfs[[plate]] <- df
 }
 
 # Print the head of each data frame in the list
@@ -56,9 +56,9 @@ for (plate in names(platemap_dfs)) {
 
 # Color-blind friendly and most distinct color palette
 okabe_ito <- c(
-    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#8DA0CB", 
-    "#D55E00", "#CC79A7", "#999999", "#A6CEE3", "#1F78B4", 
-    "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", 
+    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#8DA0CB",
+    "#D55E00", "#CC79A7", "#999999", "#A6CEE3", "#1F78B4",
+    "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F",
     "#FF7F00", "#CAB2D6"
 )
 
