@@ -5,7 +5,6 @@
 #
 # Currently, the images are located nest deep within multiple folders.
 # For best practices, we will copy the images (preserving metadata) to one folder that can be used for CellProfiler processing.
-# This file is modified from its original version: https://github.com/WayScience/GFF_2D_organoid_prototyping .
 
 # ## Import libraries
 
