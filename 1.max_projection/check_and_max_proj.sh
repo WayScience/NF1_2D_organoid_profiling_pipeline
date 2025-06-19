@@ -9,9 +9,15 @@ conda activate gff_preprocessing_env
 jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
 cd scripts || exit
-# run Python script for checking for incomplete sets and cleaning
-python 0.cp_max_projection.py
-python 1.get_the_middle_slice.py
+
+# patient_array=( "NF0014" "NF0016" "NF0018" "NF0021" "SARCO219" "SARCO361" )
+patient_array=( "NF0021" "SARCO219" )
+
+for patient in "${patient_array[@]}"; do
+    # run Python script for checking for incomplete sets and cleaning
+    python 0.cp_max_projection.py --patient "$patient"
+    python 1.get_the_middle_slice.py --patient "$patient"
+done
 
 conda deactivate
 
