@@ -12,7 +12,6 @@ from concurrent.futures import Future, ProcessPoolExecutor
 from typing import List
 
 
-
 def results_to_log(
     results: List[subprocess.CompletedProcess], log_dir: pathlib.Path, run_name: str
 ) -> None:

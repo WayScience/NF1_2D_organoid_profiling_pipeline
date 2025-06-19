@@ -5,19 +5,44 @@
 
 # ## Import libraries
 
-# In[1]:
+# In[ ]:
 
 
+import argparse
 import pathlib
 import sys
 
 sys.path.append("../../utils")
 import cp_parallel
 
-# In[2]:
+# check if in a jupyter notebook
+try:
+    cfg = get_ipython().config
+    in_notebook = True
+except NameError:
+    in_notebook = False
+
+print(in_notebook)
 
 
-patient = "NF0014"
+# In[ ]:
+
+
+if not in_notebook:
+    # set up arg parser
+    parser = argparse.ArgumentParser(description="Segment the nuclei of a tiff image")
+
+    parser.add_argument(
+        "--patient",
+        type=str,
+        help="Patient ID to use for the segmentation",
+    )
+
+    args = parser.parse_args()
+    patient = args.patient
+
+else:
+    patient = "NF0014"
 
 
 # ## Set paths and variables
@@ -83,7 +108,7 @@ for well_fov in well_fovs:
 #
 # Note: This code cell was not ran as we prefer to perform CellProfiler processing tasks via `sh` file (bash script) which is more stable.
 
-# In[ ]:
+# In[6]:
 
 
 cp_parallel.run_cellprofiler_parallel(

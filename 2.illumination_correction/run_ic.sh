@@ -11,8 +11,14 @@ jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
 cd scripts/ || exit 1
 
-# run Python script for performing illumination correction with CellProfiler
-python cp_illum_correction.py
+# patient_array=( "NF0014" "NF0016" "NF0018" "NF0021" "SARCO219" "SARCO361" )
+patient_array=( "NF0016" "NF0018" "NF0021" "SARCO219" "SARCO361" )
+
+for patient in "${patient_array[@]}"; do
+echo "Processing patient: $patient"
+    # run Python script for performing illumination correction with CellProfiler
+    python cp_illum_correction.py --patient "$patient"
+done
 
 conda deactivate
 
