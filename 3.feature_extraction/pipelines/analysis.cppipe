@@ -89,23 +89,6 @@ Groups:[module_num:4|svn_version:'Unknown'|variable_revision_number:2|show_windo
     Metadata category:Well
     Metadata category:Site
 
-RunStarDist:[module_num:5|svn_version:'Unknown'|variable_revision_number:1|show_window:False|notes:['Detect nuclei.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
-    Select the input image:Hoechst
-    Model Type:2D
-    Name the output object:Nuclei
-    Tile input image?:No
-    Horizontal tiles:1
-    Vertical tiles:1
-    Save probability image?:No
-    Name the probability image:Probabilities
-    Model folder:Elsewhere...|
-    Model:Versatile (fluorescent nuclei)
-    Model:3D_demo
-    Probability threshold:0.6
-    Overlap threshold:0.4
-    Manually set how much GPU memory each worker can use?:No
-    GPU memory (in GB) for each worker:0.5
-
 IdentifySecondaryObjects:[module_num:6|svn_version:'Unknown'|variable_revision_number:10|show_window:False|notes:['Detect whole cells.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select the input objects:Nuclei
     Name the objects to be identified:Cells

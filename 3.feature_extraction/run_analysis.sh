@@ -8,5 +8,11 @@ conda activate gff_cp_env
 # convert Jupyter notebooks to scripts
 jupyter nbconvert --to script --output-dir=scripts/ *.ipynb
 
+cd scripts || exit
 # run Python script for performing illumination correction with CellProfiler
-python scripts/cp_analysis.py
+python cp_analysis.py
+
+cd .. || exit
+conda deactivate
+
+echo  "Feature extraction completed successfully."

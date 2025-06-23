@@ -8,7 +8,7 @@ import multiprocessing
 import os
 import pathlib
 import subprocess
-from concurrent.futures import ProcessPoolExecutor, Future
+from concurrent.futures import Future, ProcessPoolExecutor
 from typing import List
 
 from errors.exceptions import MaxWorkerError
@@ -91,7 +91,7 @@ def run_cellprofiler_parallel(
                 f"Directory '{pathlib.Path(path_to_images).name}' does not exist or is not a directory"
             )
         # make output directory if it is not already created
-        pathlib.Path(path_to_output).mkdir(exist_ok=True)
+        pathlib.Path(path_to_output).mkdir(exist_ok=True, parents=True)
 
         # Build command for each plate
         command = [
