@@ -23,14 +23,18 @@ for well_fov in "${well_fovs[@]}"; do
     well_fov=${well_fov%*/}
     well_fov=$(basename "$well_fov")
     for twoD_method in "${twoD_methods[@]}"; do
-        echo "Processing well_fov: $well_fov with twoD_method: $twoD_method"
-        # run Python script for running preprocessing of morphology profiles
+        run Python script for running preprocessing of morphology profiles
         python 0.segment_nuclei.py \
             --patient "$patient" \
             --well_fov "$well_fov" \
             --clip_limit 0.03 \
             --twoD_method "$twoD_method"
         python 1.segment_cells.py \
+            --patient "$patient" \
+            --well_fov "$well_fov" \
+            --clip_limit 0.01 \
+            --twoD_method "$twoD_method"
+        python 2.segment_organoids.py \
             --patient "$patient" \
             --well_fov "$well_fov" \
             --clip_limit 0.01 \
