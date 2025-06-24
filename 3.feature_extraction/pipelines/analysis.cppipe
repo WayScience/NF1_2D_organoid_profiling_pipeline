@@ -45,7 +45,7 @@ NamesAndTypes:[module_num:3|svn_version:'Unknown'|variable_revision_number:8|sho
     Match metadata:[]
     Image set matching method:Order
     Set intensity range from:Image metadata
-    Assignments count:7
+    Assignments count:8
     Single images count:0
     Maximum intensity:255.0
     Process as 3D?:No
@@ -94,6 +94,12 @@ NamesAndTypes:[module_num:3|svn_version:'Unknown'|variable_revision_number:8|sho
     Select the image type:Objects
     Set intensity range from:Image metadata
     Maximum intensity:255.0
+    Select the rule criteria:and (file does contain "organoid_mask")
+    Name to assign these images:Nuclei
+    Name to assign these objects:Organoid
+    Select the image type:Objects
+    Set intensity range from:Image metadata
+    Maximum intensity:255.0
 
 Groups:[module_num:4|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['We do not use groups in this pipeline.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Do you want to group your images?:No
@@ -111,7 +117,7 @@ MeasureColocalization:[module_num:6|svn_version:'Unknown'|variable_revision_numb
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Set threshold as percentage of maximum intensity for the images:15.0
     Select where to measure correlation:Both
-    Select objects to measure:Cells, Cytoplasm, Nuclei
+    Select objects to measure:Cells, Cytoplasm, Nuclei, Organoid
     Run all metrics?:Yes
     Calculate correlation and slope metrics?:Yes
     Calculate the Manders coefficients?:Yes
@@ -123,7 +129,7 @@ MeasureColocalization:[module_num:6|svn_version:'Unknown'|variable_revision_numb
 MeasureGranularity:[module_num:7|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure granularity metrics within images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Measure within objects?:Yes
-    Select objects to measure:Cells, Cytoplasm, Nuclei
+    Select objects to measure:Cells, Cytoplasm, Nuclei, Organoid
     Subsampling factor for granularity measurements:0.25
     Subsampling factor for background reduction:0.25
     Radius of structuring element:10
@@ -131,11 +137,11 @@ MeasureGranularity:[module_num:7|svn_version:'Unknown'|variable_revision_number:
 
 MeasureObjectIntensity:[module_num:8|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure intensity metrics across all objects within all channels.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
-    Select objects to measure:Cells, Cytoplasm, Nuclei
+    Select objects to measure:Cells, Cytoplasm, Nuclei, Organoid
 
 MeasureObjectIntensityDistribution:[module_num:9|svn_version:'Unknown'|variable_revision_number:6|show_window:False|notes:['Measure object radial distribution metrics across all objects in all channels, using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
-    Hidden:3
+    Hidden:4
     Hidden:1
     Hidden:0
     Calculate intensity Zernikes?:Magnitudes and phase
@@ -147,6 +153,9 @@ MeasureObjectIntensityDistribution:[module_num:9|svn_version:'Unknown'|variable_
     Object to use as center?:These objects
     Select objects to use as centers:None
     Select objects to measure:Nuclei
+    Object to use as center?:These objects
+    Select objects to use as centers:None
+    Select objects to measure:Organoid
     Object to use as center?:These objects
     Select objects to use as centers:None
     Scale the bins?:Yes
@@ -167,13 +176,13 @@ MeasureObjectNeighbors:[module_num:10|svn_version:'Unknown'|variable_revision_nu
     Select colormap:Oranges
 
 MeasureObjectSizeShape:[module_num:11|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure area shape features from all objects using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
-    Select object sets to measure:Cells, Cytoplasm, Nuclei
+    Select object sets to measure:Cells, Cytoplasm, Nuclei, Organoid
     Calculate the Zernike features?:Yes
     Calculate the advanced features?:No
 
 MeasureTexture:[module_num:12|svn_version:'Unknown'|variable_revision_number:7|show_window:False|notes:['Measure texture metrics across all images and objects across all channels using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
-    Select objects to measure:Cells, Cytoplasm, Nuclei
+    Select objects to measure:Cells, Cytoplasm, Nuclei, Organoid
     Enter how many gray levels to measure the texture at:256
     Hidden:1
     Measure whole images or objects?:Both
