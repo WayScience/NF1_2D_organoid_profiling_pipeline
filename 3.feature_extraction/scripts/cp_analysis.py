@@ -8,76 +8,110 @@
 # In[1]:
 
 
+import argparse
 import pathlib
 import pprint
-
 import sys
 
-sys.path.append("../utils")
+sys.path.append("../../utils")
 import cp_parallel
+
+# check if in a jupyter notebook
+try:
+    cfg = get_ipython().config
+    in_notebook = True
+except NameError:
+    in_notebook = False
+
+
+# In[ ]:
+
+
+if not in_notebook:
+    print("Running as script")
+    # set up arg parser
+    parser = argparse.ArgumentParser(description="Segment the nuclei of a tiff image")
+
+    parser.add_argument(
+        "--patient",
+        type=str,
+        help="Patient ID",
+    )
+
+    parser.add_argument(
+        "--well_fov",
+        type=str,
+        help="Path to the input directory containing the tiff images",
+    )
+
+    args = parser.parse_args()
+    well_fov = args.well_fov
+    patient = args.patient
+else:
+    print("Running in a notebook")
+    well_fov = "C2-1"
+    patient = "NF0014"
+
+middle_slice_input = pathlib.Path(
+    f"../../data/{patient}/middle_slice_illum_correction/{well_fov}"
+).resolve(strict=True)
+max_projected_input = pathlib.Path(
+    f"../../data/{patient}/zmax_proj_illum_correction/{well_fov}"
+).resolve(strict=True)
 
 
 # ## Set paths and variables
 
-# In[2]:
+# In[3]:
 
 
 # set the run type for the parallelization
 run_name = "analysis"
 
 # set path for CellProfiler pipeline
-path_to_pipeline = pathlib.Path("./analysis.cppipe").resolve(strict=True)
-
-# set main output dir for all plates if it doesn't exist
-output_dir = pathlib.Path("./sqlite_output")
-output_dir.mkdir(exist_ok=True)
+path_to_pipeline = pathlib.Path("../pipelines/analysis.cppipe").resolve(strict=True)
 
 # set path to plugins directory for the CLI to reference (will need to update locally if reproducing)
 plugins_directory = (
-    pathlib.Path("../../Desktop/Github/CellProfiler/cellprofiler/modules/plugins")
+    pathlib.Path("/home/lippincm/CellProfiler-plugins/active_plugins")
     .absolute()
     .resolve(strict=True)
 )
 
-# directory where IC images are within the folder
-images_dir = pathlib.Path(
-    "../2.illumination_correction/Corrected_Images/NF0014"
-).resolve(strict=True)
-
 # Get the plate name from the folder name
-plate_name = images_dir.stem  # Get the folder name as the plate name
-print(plate_name)
+plate_name = well_fov  # Get the folder name as the plate name
 
 
 # ## Create dictionary to process data
 
-# In[3]:
+# In[4]:
 
 
+plate_info_dictionary = {}
 # create plate info dictionary with all parts of the CellProfiler CLI command to run in parallel
-plate_info_dictionary = {
-    plate_name: {
+for images_dir in [middle_slice_input, max_projected_input]:
+    plate_info_dictionary[f"{plate_name}_{str(images_dir.parent.name)}"] = {
         "path_to_images": images_dir,
-        "path_to_output": pathlib.Path(f"{output_dir}/{plate_name}"),
+        "path_to_output": pathlib.Path(
+            f"../../data/{patient}/cellprofiler_{str(images_dir.parent.name.split('_illum_correction')[0])}_output/{well_fov}/"
+        ).resolve(),
         "path_to_pipeline": path_to_pipeline,
-        "plugins_directory": plugins_directory
+        "plugins_directory": plugins_directory,
     }
-}
 
 # view the dictionary to assess that all info is added correctly
 pprint.pprint(plate_info_dictionary, indent=4)
 
 
 # ## Perform CellProfiler analysis on data
-# 
+#
 # The function being called is called "run_cellprofiler_parallel" but can be used if there is only one plate to run. We can also split the data by well and process that way in parallel, but we choose to process at all at once for now.
-# 
+#
 # Note: This code cell was not ran as we prefer to perform CellProfiler processing tasks via `sh` file (bash script) which is more stable.
 
-# In[ ]:
+# In[5]:
 
 
 cp_parallel.run_cellprofiler_parallel(
     plate_info_dictionary=plate_info_dictionary, run_name=run_name
 )
-
