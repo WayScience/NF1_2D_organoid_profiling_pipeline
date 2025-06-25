@@ -77,7 +77,7 @@ plate_name = well_fov  # Get the folder name as the plate name
 
 # ## Create dictionary to process data
 
-# In[4]:
+# In[ ]:
 
 
 plate_info_dictionary = {}
@@ -89,7 +89,6 @@ for images_dir in [middle_slice_input, max_projected_input]:
             f"../../data/{patient}/cellprofiler_{str(images_dir.parent.name.split('_illum_correction')[0])}_output/{well_fov}/"
         ).resolve(),
         "path_to_pipeline": path_to_pipeline,
-        "plugins_directory": plugins_directory,
     }
 
 # view the dictionary to assess that all info is added correctly
