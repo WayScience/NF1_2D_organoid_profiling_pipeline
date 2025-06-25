@@ -62,7 +62,7 @@ max_projected_input = pathlib.Path(
 
 # ## Set paths and variables
 
-# In[3]:
+# In[ ]:
 
 
 # set the run type for the parallelization
@@ -70,13 +70,6 @@ run_name = "analysis"
 
 # set path for CellProfiler pipeline
 path_to_pipeline = pathlib.Path("../pipelines/analysis.cppipe").resolve(strict=True)
-
-# set path to plugins directory for the CLI to reference (will need to update locally if reproducing)
-plugins_directory = (
-    pathlib.Path("/home/lippincm/CellProfiler-plugins/active_plugins")
-    .absolute()
-    .resolve(strict=True)
-)
 
 # Get the plate name from the folder name
 plate_name = well_fov  # Get the folder name as the plate name
