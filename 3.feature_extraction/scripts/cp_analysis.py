@@ -24,7 +24,7 @@ except NameError:
     in_notebook = False
 
 
-# In[ ]:
+# In[2]:
 
 
 if not in_notebook:
@@ -62,7 +62,7 @@ max_projected_input = pathlib.Path(
 
 # ## Set paths and variables
 
-# In[ ]:
+# In[3]:
 
 
 # set the run type for the parallelization
@@ -77,7 +77,7 @@ plate_name = well_fov  # Get the folder name as the plate name
 
 # ## Create dictionary to process data
 
-# In[ ]:
+# In[4]:
 
 
 plate_info_dictionary = {}

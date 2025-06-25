@@ -4,7 +4,7 @@ module load anaconda
 # initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
 conda init bash
 # activate the preprocessing environment
-conda activate GFF_segmentation
+conda activate GFF_cellprofiler
 
 cd scripts/ || exit
 
