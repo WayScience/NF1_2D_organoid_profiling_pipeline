@@ -11,7 +11,7 @@ jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 cd scripts/ || exit
 
 patient="NF0014"
-z_stack_dir="../../data/$patient/zstack_images/"
+z_stack_dir="../../data/$patient/zstack_images"
 
 mapfile -t well_fovs < <(ls -d "$z_stack_dir"/*)
 
@@ -22,8 +22,9 @@ twoD_methods=( "zmax" "middle" )
 for well_fov in "${well_fovs[@]}"; do
     well_fov=${well_fov%*/}
     well_fov=$(basename "$well_fov")
+    echo "Processing well_fov: $well_fov"
     for twoD_method in "${twoD_methods[@]}"; do
-        run Python script for running preprocessing of morphology profiles
+        # run Python script for running preprocessing of morphology profiles
         python 0.segment_nuclei.py \
             --patient "$patient" \
             --well_fov "$well_fov" \
