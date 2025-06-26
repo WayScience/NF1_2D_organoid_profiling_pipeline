@@ -5,7 +5,7 @@
 # The end goals is to segment cell and extract morphology features from cellprofiler.
 # These masks must be imported into cellprofiler to extract features.
 
-# In[ ]:
+# In[1]:
 
 
 import argparse
@@ -177,7 +177,7 @@ if not in_notebook:
     twoD_method = args.twoD_method
 
 else:
-    well_fov = "C10-1"
+    well_fov = "C4-2"
     window_size = 4
     clip_limit = 0.05
     patient = "NF0014"
@@ -209,7 +209,7 @@ files = sorted(input_dir.glob("*"))
 files = [str(x) for x in files if x.suffix in image_extensions]
 
 
-# In[ ]:
+# In[5]:
 
 
 # find the cytoplasmic channels in the image set

@@ -19,9 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import skimage
 import tifffile
-import torch
-from cellpose import models
-from skimage import io
+from skimage import io, segmentation
 
 # check if in a jupyter notebook
 try:
@@ -36,7 +34,7 @@ except NameError:
 # If if a notebook run the hardcoded paths.
 # However, if this is run as a script, the paths are set by the parsed arguments.
 
-# In[ ]:
+# In[2]:
 
 
 if not in_notebook:
@@ -111,27 +109,32 @@ files = [str(x) for x in files if x.suffix in image_extensions]
 for f in files:
     if "555" in f:
         cell = io.imread(f)
+    elif "nuclei_mask" in f:
+        nuclei_mask = io.imread(f)
 cell = np.array(cell)
 cell = skimage.exposure.equalize_adapthist(cell, clip_limit=clip_limit)
-plt.imshow(cell, cmap="gray")
-plt.axis("off")
-plt.show()
+nuclei_mask = np.array(nuclei_mask)
+if in_notebook:
+    plt.imshow(cell, cmap="gray")
+    plt.axis("off")
+    plt.show()
 
 
-# ## Cellpose
+# ## Watershed the cells from the nuclei
 
 # In[5]:
 
 
-use_GPU = torch.cuda.is_available()
-# Load the model
-model_name = "cyto3"
-model = models.CellposeModel(gpu=use_GPU, model_type=model_name)
-
-
-labels, details, _ = model.eval(cell, diameter=100, channels=[0, 0])
-
-# save the labels
+labels = np.zeros_like(cell, dtype=np.int32)
+# get the seeds from the nuclei mask
+seeds = skimage.measure.label(nuclei_mask, connectivity=2)
+labels = segmentation.watershed(cell, markers=seeds)
+# make sure the background is labeled as 0
+labels[labels == -1] = 0
+# set the largest label to 0 (background)
+largest_label = np.bincount(labels.ravel()).argmax()
+labels[labels == largest_label] = 0
+# # save the labels
 labels_path = input_dir / f"{well_fov}_cell_masks.tiff"
 tifffile.imwrite(labels_path, labels.astype(np.uint16))
 
@@ -143,11 +146,15 @@ if in_notebook:
     plot = plt.figure(figsize=(10, 5))
     plt.figure(figsize=(10, 10))
     plt.subplot(131)
-    plt.imshow(labels, cmap="gray")
+    plt.imshow(labels, cmap="nipy_spectral")
     plt.title("mask")
     plt.axis("off")
-
     plt.subplot(132)
+    plt.imshow(nuclei_mask, cmap="nipy_spectral")
+    plt.title("nuclei mask")
+    plt.axis("off")
+
+    plt.subplot(133)
     plt.imshow(cell, cmap="gray")
     plt.title("raw")
     plt.axis("off")
