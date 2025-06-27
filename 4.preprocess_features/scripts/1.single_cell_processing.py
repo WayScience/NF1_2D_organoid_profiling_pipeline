@@ -8,69 +8,154 @@
 # In[1]:
 
 
+import argparse
 import pathlib
 import pprint
 
 import pandas as pd
-
-from pycytominer import annotate, normalize, feature_select
+from pycytominer import aggregate, annotate, feature_select, normalize
 from pycytominer.cyto_utils import infer_cp_features
 
+try:
+    cfg = get_ipython().config
+    in_notebook = True
+except NameError:
+    in_notebook = False
 
-# ## Set paths and variables
 
 # In[2]:
 
 
-# Path to dir with profiles
-profiles_dir = pathlib.Path("./data/converted_profiles")
+if not in_notebook:
+    print("Running as script")
+    # set up arg parser
+    parser = argparse.ArgumentParser(description="Segment the nuclei of a tiff image")
 
-# output path for single-cell profiles 
-output_dir = pathlib.Path("./data/single_cell_profiles")
+    parser.add_argument(
+        "--patient",
+        type=str,
+        help="Patient ID",
+    )
+
+    args = parser.parse_args()
+    patient = args.patient
+else:
+    print("Running in a notebook")
+    patient = "NF0014"
+
+
+# ## Set paths and variables
+
+# In[3]:
+
+
+# output path for single-cell profiles
+output_dir = pathlib.Path(f"../../data/{patient}")
 output_dir.mkdir(parents=True, exist_ok=True)
-
-# Extract the plate names from the file name
-plate_names = [file.stem.split("_")[0] for file in profiles_dir.glob("*.parquet")]
-
-# path for platemap directory
-platemap_dir = pathlib.Path("../0.download_data/metadata")
-
+paltemap_path = pathlib.Path(f"../../data/{patient}/platemap/platemap.csv").resolve(
+    strict=True
+)
 # operations to perform for feature selection
 feature_select_ops = [
     "variance_threshold",
     "correlation_threshold",
     "blocklist",
-    "drop_na_columns"
+    "drop_na_columns",
 ]
 
 
 # ## Set dictionary with plates to process
 
-# In[3]:
+# In[4]:
 
 
-# create plate info dictionary 
+middle_slice_sc = pathlib.Path(
+    f"../../data/{patient}/0.converted/middle_slice_sc.parquet"
+).resolve()
+max_projected_sc_output = pathlib.Path(
+    f"../../data/{patient}/0.converted/max_projected_sc.parquet"
+).resolve()
+middle_slice_organoid_output = pathlib.Path(
+    f"../../data/{patient}/0.converted/middle_slice_organoid.parquet"
+).resolve()
+max_projected_organoid_output = pathlib.Path(
+    f"../../data/{patient}/0.converted/max_projected_organoid.parquet"
+).resolve()
+
+
+# In[5]:
+
+
+# create plate info dictionary
 plate_info_dictionary = {
-    name: {
-        "profile_paths": {
-            "sc": str(
-                pathlib.Path(list(profiles_dir.rglob(f"{name}_sc_converted.parquet"))[0]).resolve(
-                    strict=True
-                )
-            ),
-            "organoid": str(
-                pathlib.Path(list(profiles_dir.rglob(f"{name}_organoid_converted.parquet"))[0]).resolve(
-                    strict=True
-                )
-            ),
-        },
-        "platemap_path": str(
-            pathlib.Path(list(platemap_dir.rglob(f"{name}_platemap.csv"))[0]).resolve(
-                strict=True
-            )
-        ),
-    }
-    for name in plate_names
+    "sc_middle_slice": {
+        "input_path": pathlib.Path(
+            f"../../data/{patient}/0.converted/middle_slice_sc.parquet"
+        ).resolve(strict=True),
+        "annotated_path": pathlib.Path(
+            f"../../data/{patient}/1.annotated/middle_slice_sc.parquet"
+        ).resolve(),
+        "normalized_path": pathlib.Path(
+            f"../../data/{patient}/2.normalized/middle_slice_sc.parquet"
+        ).resolve(),
+        "feature_selected_path": pathlib.Path(
+            f"../../data/{patient}/3.feature_selected/middle_slice_sc.parquet"
+        ).resolve(),
+        "aggregated_path": pathlib.Path(
+            f"../../data/{patient}/4.aggregated/middle_slice_sc.parquet"
+        ).resolve(),
+    },
+    "sc_max_projected": {
+        "input_path": pathlib.Path(
+            f"../../data/{patient}/0.converted/max_projected_sc.parquet"
+        ).resolve(strict=True),
+        "annotated_path": pathlib.Path(
+            f"../../data/{patient}/1.annotated/max_projected_sc.parquet"
+        ).resolve(),
+        "normalized_path": pathlib.Path(
+            f"../../data/{patient}/2.normalized/max_projected_sc.parquet"
+        ).resolve(),
+        "feature_selected_path": pathlib.Path(
+            f"../../data/{patient}/3.feature_selected/max_projected_sc.parquet"
+        ).resolve(),
+        "aggregated_path": pathlib.Path(
+            f"../../data/{patient}/4.aggregated/max_projected_sc.parquet"
+        ).resolve(),
+    },
+    "organoid_middle_slice": {
+        "input_path": pathlib.Path(
+            f"../../data/{patient}/0.converted/middle_slice_organoid.parquet"
+        ).resolve(strict=True),
+        "annotated_path": pathlib.Path(
+            f"../../data/{patient}/1.annotated/middle_slice_organoid.parquet"
+        ).resolve(),
+        "normalized_path": pathlib.Path(
+            f"../../data/{patient}/2.normalized/middle_slice_organoid.parquet"
+        ).resolve(),
+        "feature_selected_path": pathlib.Path(
+            f"../../data/{patient}/3.feature_selected/middle_slice_organoid.parquet"
+        ).resolve(),
+        "aggregated_path": pathlib.Path(
+            f"../../data/{patient}/4.aggregated/middle_slice_organoid.parquet"
+        ).resolve(),
+    },
+    "organoid_max_projected": {
+        "input_path": pathlib.Path(
+            f"../../data/{patient}/0.converted/max_projected_organoid.parquet"
+        ).resolve(strict=True),
+        "annotated_path": pathlib.Path(
+            f"../../data/{patient}/1.annotated/max_projected_organoid.parquet"
+        ).resolve(),
+        "normalized_path": pathlib.Path(
+            f"../../data/{patient}/2.normalized/max_projected_organoid.parquet"
+        ).resolve(),
+        "feature_selected_path": pathlib.Path(
+            f"../../data/{patient}/3.feature_selected/max_projected_organoid.parquet"
+        ).resolve(),
+        "aggregated_path": pathlib.Path(
+            f"../../data/{patient}/4.aggregated/max_projected_organoid.parquet"
+        ).resolve(),
+    },
 }
 
 # view the dictionary to assess that all info is added correctly
@@ -79,96 +164,88 @@ pprint.pprint(plate_info_dictionary, indent=4)
 
 # ## Process data with pycytominer
 
-# In[4]:
+# In[6]:
 
 
-# Map for how to rename Metadata columns (remove Image_ prefix)
-column_name_mapping = {
-    "Image_Metadata_Site": "Metadata_Site",
-    "Image_Metadata_ZSlice": "Metadata_ZSlice"
-}
+pd.read_parquet("../../data/NF0014/0.converted/max_projected_sc.parquet").head()
 
+
+# In[7]:
+
+
+platemap_df = pd.read_csv(paltemap_path)
 for plate, info in plate_info_dictionary.items():
     print(f"Performing pycytominer pipeline for {plate}")
+    # make the parent directories for the output files
+    for key, value in info.items():
+        value.parent.mkdir(parents=True, exist_ok=True)
 
-    # Prepare output paths for different profile types
-    for profile in ["sc", "organoid"]:
-        output_annotated_file = str(pathlib.Path(f"{output_dir}/{plate}_{profile}_annotated.parquet"))
-        output_normalized_file = str(pathlib.Path(f"{output_dir}/{plate}_{profile}_normalized.parquet"))
-        output_feature_select_file = str(pathlib.Path(f"{output_dir}/{plate}_{profile}_feature_selected.parquet"))
-        
-        profile_path = info["profile_paths"].get(profile)
+    profile_df = pd.read_parquet(info["input_path"])
 
-        if profile_path:
-            # Read in the profile and platemap files
-            profile_df = pd.read_parquet(profile_path)
-            platemap_df = pd.read_csv(info["platemap_path"])
+    # Step 1: Annotation
+    print("Performing annotation...")
+    annotate(
+        profiles=profile_df,
+        platemap=platemap_df,
+        join_on=["Metadata_well_position", "Metadata_Well"],
+        output_file=info["annotated_path"],
+        output_type="parquet",
+    )
 
-            # Set compartments based on profile type
-            compartments = ["nuclei", "cells", "cytoplasm"] if profile == "sc" else ["organoid"]
+    # Load the annotated parquet file to fix metadata columns names
+    annotated_df = pd.read_parquet(info["annotated_path"])
 
-            print("Performing annotation for", plate, "for the", profile, "profiles...")
+    print("Performing normalization...")
+    # Step 2: Normalization
+    # Find the cp features based on the mask name or image
+    if "organoid" in plate.lower():
+        compartments = ["Organoid"]
+    else:
+        compartments = ["Cells", "Nuclei", "Cytoplasm"]
+    cp_features = infer_cp_features(
+        population_df=annotated_df, compartments=compartments
+    )
 
-            # Step 1: Annotation
-            annotate(
-                profiles=profile_df,
-                platemap=platemap_df,
-                join_on=["Metadata_well_position", "Image_Metadata_Well"],
-                output_file=output_annotated_file,
-                output_type="parquet",
-            )
+    # Find the metadata features
+    meta_features = infer_cp_features(
+        population_df=annotated_df, compartments=compartments, metadata=True
+    )
 
-            # Load the annotated parquet file to fix metadata columns names
-            annotated_df = pd.read_parquet(output_annotated_file)
+    # Perform normalization
+    normalize(
+        profiles=annotated_df,
+        features=cp_features,
+        meta_features=meta_features,
+        method="standardize",
+        output_file=info["normalized_path"],
+        output_type="parquet",
+    )
 
-            # Rename metadata columns using the rename() function
-            annotated_df.rename(columns=column_name_mapping, inplace=True)
+    print("Performing feature selection for...")
 
-            # Save the modified DataFrame back to the same location
-            annotated_df.to_parquet(output_annotated_file, index=False)
-            
-            print("Performing normalization...")
+    # Step 3: Feature selection
+    fs_df = feature_select(
+        profiles=str(info["normalized_path"]),
+        operation=feature_select_ops,
+        na_cutoff=0,
+        features=cp_features,
+        output_file=str(info["feature_selected_path"]),
+        output_type="parquet",
+    )
 
-            # Step 2: Normalization
-            # Find the cp features based on the mask name or image
-            cp_features = infer_cp_features(population_df=annotated_df, compartments=compartments)
-
-            # Find the metadata features
-            meta_features = infer_cp_features(population_df=annotated_df, compartments=compartments, metadata=True)
-
-            # Perform normalization
-            normalize(
-                profiles=annotated_df,
-                features=cp_features,
-                meta_features=meta_features,
-                method="standardize",
-                output_file=output_normalized_file,
-                output_type="parquet",
-            )
-            
-            print("Performing feature selection for...")
-
-            # Step 3: Feature selection
-            feature_select(
-                profiles=output_normalized_file,
-                operation=feature_select_ops,
-                na_cutoff=0,
-                features=cp_features,
-                output_file=output_feature_select_file,
-                output_type="parquet"
-            )
-            print(f"Annotation, normalization, and feature selection have been performed for {plate} and {profile} profiles")
-
-        else:
-            print(f"{profile.capitalize()} profile path not found for {plate}")
-
-
-# In[5]:
-
-
-# Check output file
-test_df = pd.read_parquet(output_feature_select_file)
-
-print(test_df.shape)
-test_df.head(2)
-
+    cp_features = infer_cp_features(
+        population_df=pd.read_parquet(info["feature_selected_path"]),
+        compartments=compartments,
+    )
+    fs_df = pd.read_parquet(info["feature_selected_path"])
+    # Step 4: Aggregation
+    print("Performing aggregation...")
+    aggregate(
+        population_df=fs_df,
+        strata=["Metadata_treatment", "Metadata_dose"],
+        features=cp_features,
+        operation="median",
+        output_file=str(info["aggregated_path"]),
+        output_type="parquet",
+    )
+    print(f"Aggregation has been performed for:\n{plate}")
