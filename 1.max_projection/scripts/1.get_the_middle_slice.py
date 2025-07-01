@@ -1,21 +1,52 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
+import argparse
 import pathlib
 
 import tifffile
 import tqdm
 
-# In[2]:
+# check if in a jupyter notebook
+try:
+    cfg = get_ipython().config
+    in_notebook = True
+except NameError:
+    in_notebook = False
+
+print(in_notebook)
+
+
+# In[ ]:
+
+
+if not in_notebook:
+    # set up arg parser
+    parser = argparse.ArgumentParser(description="Segment the nuclei of a tiff image")
+
+    parser.add_argument(
+        "--patient",
+        type=str,
+        help="Patient ID to use for the segmentation",
+    )
+
+    args = parser.parse_args()
+    patient = args.patient
+
+else:
+    patient = "NF0014"
+
+
+# In[ ]:
 
 
 # input images directory
-images_dir = pathlib.Path("../../data/NF0014/zstack_images/").resolve(strict=True)
+images_dir = pathlib.Path(f"../../data/{patient}/zstack_images/").resolve(strict=True)
 # output images directory
-output_dir = pathlib.Path("../../data/NF0014/middle_slice/").resolve()
+output_dir = pathlib.Path(f"../../data/{patient}/middle_slice/").resolve()
 
 
 # In[3]:
