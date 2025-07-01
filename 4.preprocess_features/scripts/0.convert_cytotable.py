@@ -8,21 +8,72 @@
 # In[1]:
 
 
+import argparse
+import logging
 import pathlib
+import uuid
+
+import duckdb
 import pandas as pd
+import tqdm
 
 # cytotable will merge objects from SQLite file into single cells and save as parquet file
 from cytotable import convert, presets
-
-import logging
+from parsl.config import Config
+from parsl.executors import HighThroughputExecutor
 
 # Set the logging level to a higher level to avoid outputting unnecessary errors from config file in convert function
 logging.getLogger().setLevel(logging.ERROR)
+try:
+    cfg = get_ipython().config
+    in_notebook = True
+except NameError:
+    in_notebook = False
+
+
+# In[2]:
+
+
+if not in_notebook:
+    print("Running as script")
+    # set up arg parser
+    parser = argparse.ArgumentParser(description="Segment the nuclei of a tiff image")
+
+    parser.add_argument(
+        "--patient",
+        type=str,
+        help="Patient ID",
+    )
+
+    args = parser.parse_args()
+    patient = args.patient
+else:
+    print("Running in a notebook")
+    patient = "NF0014"
+
+middle_slice_input = pathlib.Path(
+    f"../../data/{patient}/cellprofiler_middle_slice_output/"
+).resolve(strict=True)
+max_projected_input = pathlib.Path(
+    f"../../data/{patient}/cellprofiler_zmax_proj_output/"
+).resolve(strict=True)
+
+# directory for processed data
+output_dir = pathlib.Path(f"../../data/{patient}/0.converted/").resolve()
+output_dir.mkdir(parents=True, exist_ok=True)
+middle_slice_sc_output = pathlib.Path(output_dir, "middle_slice_sc.parquet").resolve()
+max_projected_sc_output = pathlib.Path(output_dir, "max_projected_sc.parquet").resolve()
+middle_slice_organoid_output = pathlib.Path(
+    output_dir, "middle_slice_organoid.parquet"
+).resolve()
+max_projected_organoid_output = pathlib.Path(
+    output_dir, "max_projected_organoid.parquet"
+).resolve()
 
 
 # ## Set paths and variables
 
-# In[2]:
+# In[3]:
 
 
 # preset configurations based on typical CellProfiler outputs
@@ -31,148 +82,206 @@ preset = "cellprofiler_sqlite_pycytominer"
 # update preset to include site metadata and cell counts
 joins = presets.config["cellprofiler_sqlite_pycytominer"]["CONFIG_JOINS"].replace(
     "Image_Metadata_Well,",
-    "Image_Metadata_Well, Image_Metadata_Site, Image_Metadata_ZSlice, Image_Count_Cells,",
+    "Image_Metadata_Well, Image_Metadata_Site, Image_Count_Cells,",
 )
 
 # type of file output from cytotable (currently only parquet)
 dest_datatype = "parquet"
 
-# set path to directory with SQLite files
-sqlite_dir = pathlib.Path("../3.feature_extraction/sqlite_output")
 
-# directory for processed data
-output_dir = pathlib.Path("data")
-output_dir.mkdir(parents=True, exist_ok=True)
-
-plate_names = []
-
-for file_path in sqlite_dir.iterdir():
-    plate_names.append(file_path.stem)
-
-# print the plate names and how many plates there are (confirmation)
-print(f"There are {len(plate_names)} plate(s) in this dataset. Below are the names:")
-for name in plate_names:
-    print(name)
+well_fov_dict = {}
+for sqlite_dir in [middle_slice_input, max_projected_input]:
+    twoD_type = sqlite_dir.name.split("_out")[0].split("cellprofiler_")[1]
+    well_fov_dict[twoD_type] = {}
+    sqlites = list(sqlite_dir.rglob("*sqlite"))
+    sqlites.sort()  # sort to ensure consistent order
+    for file_path in sqlites:
+        well_fov = file_path.parent.stem
+        well_fov_dict[twoD_type][well_fov] = {
+            "image_path": file_path,
+            "output_dir": output_dir / twoD_type / f"{well_fov}",
+        }
 
 
 # ## Convert SQLite to parquet file(s) for single-cell profiles
 
-# In[3]:
-
-
-for file_path in sqlite_dir.iterdir():
-    output_path = pathlib.Path(
-        f"{output_dir}/converted_profiles/{file_path.stem}_sc_converted.parquet"
-    )
-    print("Starting conversion with cytotable for plate:", file_path.stem)
-    # Merge single cells and output as parquet file
-    convert(
-        source_path=str(file_path),
-        dest_path=str(output_path),
-        dest_datatype=dest_datatype,
-        preset=preset,
-        joins=joins,
-        chunk_size=500
-    )
-
-print("All plates have been converted with cytotable!")
-
-
-# # Load in converted profiles to update
-
 # In[4]:
 
 
-# Directory with converted profiles
-converted_dir = pathlib.Path(f"{output_dir}/converted_profiles")
+output_dict_of_dfs = {}
+for sqlite_dir in [middle_slice_input, max_projected_input]:
+    output_dict_of_dfs[sqlite_dir.name.split("_out")[0].split("cellprofiler_")[1]] = {
+        "df_list": [],
+    }
+output_dict_of_dfs
 
-# Define the list of columns to prioritize and prefix
-prioritized_columns = [
-    "Nuclei_Location_Center_X",
-    "Nuclei_Location_Center_Y",
-    "Cells_Location_Center_X",
-    "Cells_Location_Center_Y",
-    "Image_Count_Cells"
-]
-
-for file_path in converted_dir.iterdir():
-    # Load the DataFrame from the Parquet file
-    df = pd.read_parquet(file_path)
-
-    # If any, drop rows where "Metadata_ImageNumber" is NaN (artifact of cytotable)
-    df = df.dropna(subset=["Metadata_ImageNumber"])
-    
-    # Rearrange columns and add "Metadata" prefix in one line
-    df = df[
-        prioritized_columns + [col for col in df.columns if col not in prioritized_columns]
-    ].rename(
-        columns=lambda col: "Metadata_" + col if col in prioritized_columns else col
-    )
-
-    # Save the processed DataFrame as Parquet in the same path
-    df.to_parquet(file_path, index=False)
-
-
-# ## Check output to confirm process worked
-# 
-# To confirm the number of single cells is correct, please use any database browser software to see if the number of rows in the "Per_Cells" compartment matches the number of rows in the data frame.
 
 # In[5]:
 
 
-converted_df = pd.read_parquet(
-    f"./data/converted_profiles/{plate_names[0]}_sc_converted.parquet"
-)
+total = 0
+errors = 0
+# loop through the middle and zmax projected sqlite files
+for featurization_type in well_fov_dict.keys():
+    for well_fov, file_info in tqdm.tqdm(well_fov_dict[featurization_type].items()):
+        sqlite_file = file_info["image_path"]
+        total += 1
+        # convert the sqlite file to a single cell parquet file
+        try:
+            df = convert(
+                sqlite_file,
+                preset=preset,
+                joins=joins,
+                chunk_size=500,
+                dest_datatype=dest_datatype,
+                dest_path=f"{well_fov_dict[featurization_type][well_fov]['output_dir']}_sc.parquet",
+                parsl_config=Config(
+                    executors=[HighThroughputExecutor()],
+                    run_dir=f"cytotable_runinfo/{uuid.uuid4().hex}",
+                ),
+            )
+            output_dict_of_dfs[featurization_type]["df_list"].append(
+                f"{well_fov_dict[featurization_type][well_fov]['output_dir']}_sc.parquet"
+            )
+        except Exception as e:
+            errors += 1
+            print(f"Error processing {sqlite_file}: {e}")
+            continue
+print(f"Total files processed: {total}")
+print(f"Total errors encountered: {errors}")
 
-print(converted_df.shape)
-converted_df.head()
-
-
-# ## Extract organoid only profiles
 
 # In[6]:
 
 
-for file_path in sqlite_dir.iterdir():
-    output_path = pathlib.Path(
-        f"{output_dir}/converted_profiles/{file_path.stem}_organoid_converted.parquet"
+# read in the dataframes and concatenate them in place
+for featurization_type in output_dict_of_dfs.keys():
+    print(
+        f"Concatenating {len(output_dict_of_dfs[featurization_type]['df_list'])} dataframes for {featurization_type}"
     )
-    print("Starting conversion with cytotable for plate:", file_path.stem)
+    df_list = [
+        pd.read_parquet(df) for df in output_dict_of_dfs[featurization_type]["df_list"]
+    ]
+    output_dict_of_dfs[featurization_type]["df"] = pd.concat(df_list, ignore_index=True)
+    # Define the list of columns to prioritize and prefix
+    prioritized_columns = [
+        "Nuclei_Location_Center_X",
+        "Nuclei_Location_Center_Y",
+        "Cells_Location_Center_X",
+        "Cells_Location_Center_Y",
+        "Image_Count_Cells",
+    ]
 
-    # Merge single cells and output as parquet file
-    convert(
-        source_path=str(file_path),
-        dest_path=str(output_path),
-        dest_datatype=dest_datatype,
-        metadata=["image"],
-        compartments=["organoids"],
-        identifying_columns=["ImageNumber"],
-        joins="""
-        SELECT
-            *
-        FROM
-            read_parquet('per_image.parquet') as per_image
-        INNER JOIN read_parquet('per_organoids.parquet') AS per_organoids ON
-            per_organoids.Metadata_ImageNumber = per_image.Metadata_ImageNumber
-        """,
-        page_keys={
-            "image": "ImageNumber",
-            "organoids": "Organoids_Number_Object_Number",
-            "join": "Organoids_Number_Object_Number",
-        },
-        chunk_size=10,
+    # If any, drop rows where "Metadata_ImageNumber" is NaN (artifact of cytotable)
+    output_dict_of_dfs[featurization_type]["df"] = output_dict_of_dfs[
+        featurization_type
+    ]["df"].dropna(subset=["Metadata_ImageNumber"])
+
+    # Rearrange columns and add "Metadata" prefix in one line
+    output_dict_of_dfs[featurization_type]["df"] = output_dict_of_dfs[
+        featurization_type
+    ]["df"][
+        prioritized_columns
+        + [
+            col
+            for col in output_dict_of_dfs[featurization_type]["df"].columns
+            if col not in prioritized_columns
+        ]
+    ].rename(
+        columns=lambda col: "Metadata_" + col if col in prioritized_columns else col
+    )
+    # rename Image_Metadata_Well
+    output_dict_of_dfs[featurization_type]["df"] = output_dict_of_dfs[
+        featurization_type
+    ]["df"].rename(columns={"Image_Metadata_Well": "Metadata_Well"})
+
+    if featurization_type == "middle_slice":
+        output_dict_of_dfs[featurization_type]["df"].to_parquet(
+            middle_slice_sc_output, index=False
+        )
+    elif featurization_type == "zmax_proj":
+        output_dict_of_dfs[featurization_type]["df"].to_parquet(
+            max_projected_sc_output, index=False
+        )
+    print(
+        f"Saved {featurization_type} data to {output_dict_of_dfs[featurization_type]['df'].shape[0]} rows in {output_dict_of_dfs[featurization_type]['df'].shape[1]} columns"
     )
 
-print("All plates have been converted with cytotable!")
 
+# ## Extract organoid only profiles
 
 # In[7]:
 
 
-converted_df = pd.read_parquet(
-    f"./data/converted_profiles/{plate_names[0]}_organoid_converted.parquet"
-)
+output_dict_of_dfs = {}
+for sqlite_dir in [middle_slice_input, max_projected_input]:
+    output_dict_of_dfs[sqlite_dir.name.split("_out")[0].split("cellprofiler_")[1]] = {
+        "df_list": [],
+    }
+output_dict_of_dfs
 
-print(converted_df.shape)
-converted_df.head()
 
+# In[8]:
+
+
+total = 0
+errors = 0
+for featurization_type in well_fov_dict.keys():
+    print(f"Processing {featurization_type} files")
+    for well_fov, file_info in tqdm.tqdm(well_fov_dict[featurization_type].items()):
+        well = well_fov.split("-")[0]
+        fov = well_fov.split("-")[1]
+        sqlite_file = file_info["image_path"]
+        total += 1
+        try:
+            # Create a DuckDB connection
+            with duckdb.connect(sqlite_file) as con:
+                # get the organoid table
+                organoid_table = con.execute("SELECT * FROM Per_Organoid").df()
+                organoid_table.rename(
+                    columns={
+                        "ImageNumber": "Metadata_ImageNumber",
+                        "Organoid_Number_Object_Number": "Metadata_Organoid_Number_Object_Number",
+                        "Image_Metadata_Well": "Metadata_Well",
+                    },
+                    inplace=True,
+                )
+                organoid_table.insert(0, "Metadata_Well_FOV", well_fov)
+                organoid_table.insert(1, "Metadata_FOV", fov)
+                organoid_table.insert(2, "Metadata_Well", well)
+            output_dict_of_dfs[featurization_type]["df_list"].append(organoid_table)
+
+        except Exception as e:
+            errors += 1
+            print(f"Error processing {sqlite_file}: {e}")
+            continue
+
+
+# In[9]:
+
+
+# output_dict_of_dfs['middle_slice']['df_list']
+# read in the dataframes and concatenate them in place
+for featurization_type in output_dict_of_dfs.keys():
+    print(
+        f"Concatenating {len(output_dict_of_dfs[featurization_type]['df_list'])} dataframes for {featurization_type}"
+    )
+    output_dict_of_dfs[featurization_type]["df"] = pd.concat(
+        output_dict_of_dfs[featurization_type]["df_list"], ignore_index=True
+    )
+
+    # If any, drop rows where "Metadata_ImageNumber" is NaN (artifact of cytotable)
+    output_dict_of_dfs[featurization_type]["df"] = output_dict_of_dfs[
+        featurization_type
+    ]["df"].dropna(subset=["Metadata_ImageNumber"])
+    if featurization_type == "middle_slice":
+        output_dict_of_dfs[featurization_type]["df"].to_parquet(
+            middle_slice_organoid_output, index=False
+        )
+    elif featurization_type == "zmax_proj":
+        output_dict_of_dfs[featurization_type]["df"].to_parquet(
+            max_projected_organoid_output, index=False
+        )
+    print(
+        f"Saved {featurization_type} data to {output_dict_of_dfs[featurization_type]['df'].shape[0]} rows in {output_dict_of_dfs[featurization_type]['df'].shape[1]} columns"
+    )

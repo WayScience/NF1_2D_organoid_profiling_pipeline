@@ -185,3 +185,5 @@ cython_debug/
 #.idea/
 
 data/*
+4.preprocess_features/notebooks/cytotable_runinfo*
+4.preprocess_features/scripts/cytotable_runinfo*
