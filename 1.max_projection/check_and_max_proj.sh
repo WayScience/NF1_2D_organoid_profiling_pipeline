@@ -10,8 +10,7 @@ jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
 cd scripts || exit
 
-# patient_array=( "NF0014" "NF0016" "NF0018" "NF0021" "SARCO219" "SARCO361" )
-patient_array=( "NF0021" "SARCO219" )
+patient_array=( "NF0014" "NF0016" "NF0018" "NF0021" "NF0030" "NF0040" "SARCO219" "SARCO361" )
 
 for patient in "${patient_array[@]}"; do
     # run Python script for checking for incomplete sets and cleaning

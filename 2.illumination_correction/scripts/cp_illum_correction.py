@@ -5,7 +5,7 @@
 
 # ## Import libraries
 
-# In[ ]:
+# In[1]:
 
 
 import argparse
@@ -25,7 +25,7 @@ except NameError:
 print(in_notebook)
 
 
-# In[ ]:
+# In[2]:
 
 
 if not in_notebook:
@@ -102,13 +102,23 @@ for well_fov in well_fovs:
     }
 
 
+# In[6]:
+
+
+print(f"""Now runnning illumination correction for
+        patient: {patient}
+        and {len(well_fovs)} wells
+        for both zmax_proj and middle_slice
+        bringing us to a total of {len(well_fovs) * 2} runs""")
+
+
 # ## Perform illumination correction on data
 #
 # The function being called is called "run_cellprofiler_parallel" but can be used if there is only one plate to run. We can also split the data by well and process that way in parallel, but we choose to process at all at once for now.
 #
 # Note: This code cell was not ran as we prefer to perform CellProfiler processing tasks via `sh` file (bash script) which is more stable.
 
-# In[6]:
+# In[ ]:
 
 
 cp_parallel.run_cellprofiler_parallel(
