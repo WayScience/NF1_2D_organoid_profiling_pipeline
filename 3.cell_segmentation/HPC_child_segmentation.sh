@@ -17,7 +17,7 @@ twoD_methods=( "zmax" "middle" )
 
 for twoD_method in "${twoD_methods[@]}"; do
     echo "Processing well_fov: $well_fov with twoD_method: $twoD_method"
-    # run Python script for running preprocessing of morphology profiles
+    # run Python script for running segmentation of compartments
     python 0.segment_nuclei.py \
         --patient "$patient" \
         --well_fov "$well_fov" \
