@@ -13,7 +13,24 @@ import pathlib
 import pprint
 import sys
 
-sys.path.append("../../utils")
+# Get the current working directory
+cwd = pathlib.Path.cwd()
+
+if (cwd / ".git").is_dir():
+    root_dir = cwd
+
+else:
+    root_dir = None
+    for parent in cwd.parents:
+        if (parent / ".git").is_dir():
+            root_dir = parent
+            break
+
+# Check if a Git root directory was found
+if root_dir is None:
+    raise FileNotFoundError("No Git root directory found.")
+
+sys.path.append(f"{root_dir}/utils/")
 import cp_parallel
 
 # check if in a jupyter notebook
@@ -53,10 +70,10 @@ else:
     patient = "NF0014"
 
 middle_slice_input = pathlib.Path(
-    f"../../data/{patient}/middle_slice_illum_correction/{well_fov}"
+    f"{root_dir}/data/{patient}/middle_slice_illum_correction/{well_fov}"
 ).resolve(strict=True)
 max_projected_input = pathlib.Path(
-    f"../../data/{patient}/zmax_proj_illum_correction/{well_fov}"
+    f"{root_dir}/data/{patient}/zmax_proj_illum_correction/{well_fov}"
 ).resolve(strict=True)
 
 
@@ -66,13 +83,15 @@ max_projected_input = pathlib.Path(
 
 
 # set the run type for the parallelization
-run_name = "analysis"
+run_name = f"{patient}_{well_fov}"
 
 # set path for CellProfiler pipeline
-path_to_pipeline = pathlib.Path("../pipelines/analysis.cppipe").resolve(strict=True)
+path_to_pipeline = pathlib.Path(
+    f"{root_dir}/3.feature_extraction/pipelines/analysis.cppipe"
+).resolve(strict=True)
 
 # Get the plate name from the folder name
-plate_name = well_fov  # Get the folder name as the plate name
+plate_name = f"{patient}_{well_fov}"  # Get the folder name as the plate name
 
 
 # ## Create dictionary to process data
@@ -86,7 +105,7 @@ for images_dir in [middle_slice_input, max_projected_input]:
     plate_info_dictionary[f"{plate_name}_{str(images_dir.parent.name)}"] = {
         "path_to_images": images_dir,
         "path_to_output": pathlib.Path(
-            f"../../data/{patient}/cellprofiler_{str(images_dir.parent.name.split('_illum_correction')[0])}_output/{well_fov}/"
+            f"{root_dir}/data/{patient}/cellprofiler_{str(images_dir.parent.name.split('_illum_correction')[0])}_output/{well_fov}/"
         ).resolve(),
         "path_to_pipeline": path_to_pipeline,
     }

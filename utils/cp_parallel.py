@@ -34,7 +34,7 @@ def results_to_log(
 
         # Set up a unique logger for each plate/process
         logger = logging.getLogger(f"logger_{plate_name}")
-        log_file_path = log_dir / f"{plate_name}_{run_name}_run.log"
+        log_file_path = log_dir / f"{run_name}_run.log"
 
         # Create file handler for the current process's log file
         file_handler = logging.FileHandler(log_file_path)

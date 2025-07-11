@@ -5,10 +5,9 @@
 # The end goals is to segment cell and extract morphology features from cellprofiler.
 # These masks must be imported into cellprofiler to extract features.
 
-# In[1]:
+# In[ ]:
 
 
-import argparse
 import pathlib
 import sys
 
@@ -19,14 +18,8 @@ import numpy as np
 import skimage
 import tifffile
 import torch
-import tqdm
-from cellpose import core, models
+from cellpose import models
 from skimage import io
-
-use_GPU = torch.cuda.is_available()
-
-# set import path
-sys.path.append(str(pathlib.Path("../../utils/").resolve()))
 
 # check if in a jupyter notebook
 try:
@@ -35,6 +28,27 @@ try:
 except NameError:
     in_notebook = False
 
+
+# Get the current working directory
+cwd = pathlib.Path.cwd()
+
+if (cwd / ".git").is_dir():
+    root_dir = cwd
+
+else:
+    root_dir = None
+    for parent in cwd.parents:
+        if (parent / ".git").is_dir():
+            root_dir = parent
+            break
+
+# Check if a Git root directory was found
+if root_dir is None:
+    raise FileNotFoundError("No Git root directory found.")
+
+sys.path.append(f"{root_dir}/utils/")
+
+from parsable_args import parse_segmentation_args
 
 # In[2]:
 
@@ -136,62 +150,30 @@ if in_notebook:
     test_segment_with_diameter()
 
 
-# In[3]:
+# In[ ]:
 
 
 if not in_notebook:
-    # set up arg parser
-    parser = argparse.ArgumentParser(description="Segment the nuclei of a tiff image")
-
-    parser.add_argument(
-        "--patient",
-        type=str,
-        help="Patient ID to use for the segmentation",
-    )
-
-    parser.add_argument(
-        "--well_fov",
-        type=str,
-        help="Path to the input directory containing the tiff images",
-    )
-    parser.add_argument(
-        "--window_size", type=int, help="Size of the window to use for the segmentation"
-    )
-    parser.add_argument(
-        "--clip_limit",
-        type=float,
-        help="Clip limit for the adaptive histogram equalization",
-    )
-    parser.add_argument(
-        "--twoD_method",
-        type=str,
-        choices=["zmax", "middle"],
-        help="Method used to flatten the 3D image to 2D for segmentation",
-    )
-
-    args = parser.parse_args()
-    window_size = args.window_size
-    clip_limit = args.clip_limit
-    well_fov = args.well_fov
-    patient = args.patient
-    twoD_method = args.twoD_method
-
+    args_dict = parse_segmentation_args()
+    patient = args_dict["patient"]
+    well_fov = args_dict["well_fov"]
+    clip_limit = args_dict["clip_limit"]
+    twoD_method = args_dict["twoD_method"]
 else:
-    well_fov = "C4-2"
-    window_size = 4
-    clip_limit = 0.05
+    print("Running in a notebook")
     patient = "NF0014"
+    well_fov = "C2-2"
+    clip_limit = 0.01
     twoD_method = "zmax"
-
 
 if twoD_method == "middle":
     input_dir = pathlib.Path(
-        f"../../data/{patient}/middle_slice_illum_correction/{well_fov}"
+        f"{root_dir}/data/{patient}/middle_slice_illum_correction/{well_fov}"
     ).resolve(strict=True)
 
 elif twoD_method == "zmax":
     input_dir = pathlib.Path(
-        f"../../data/{patient}/zmax_proj_illum_correction/{well_fov}"
+        f"{root_dir}/data/{patient}/zmax_proj_illum_correction/{well_fov}"
     ).resolve(strict=True)
 else:
     raise ValueError(f"Unknown twoD_method: {twoD_method}")
