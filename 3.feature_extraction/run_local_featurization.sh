@@ -23,7 +23,6 @@ echo "========================================="
 
 for patient in "${patients[@]}"; do
     ((patient_counter++))
-    echo "[$patient_counter/$total_patients] Processing patient: $patient"
 
     z_stack_dir="$git_root/data/$patient/zstack_images"
 
