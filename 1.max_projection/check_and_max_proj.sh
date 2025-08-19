@@ -22,6 +22,7 @@ conda init bash
 conda activate gff_preprocessing_env
 
 
+cd scripts || exit
 # run Python script for checking for incomplete sets and cleaning
 for patient in "${patient_array[@]}"; do
     echo "Processing patient: $patient"

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
+import argparse
 import pathlib
 import sys
 
@@ -42,6 +43,7 @@ from parsable_args import parse_featurization_args_patient
 # In[2]:
 
 
+
 if not in_notebook:
     args_dict = parse_featurization_args_patient()
     patient = args_dict["patient"]
@@ -58,6 +60,7 @@ images_dir = pathlib.Path(f"{root_dir}/data/{patient}/zstack_images/").resolve(
 )
 # output images directory
 output_dir = pathlib.Path(f"{root_dir}/data/{patient}/middle_slice/").resolve()
+
 
 
 # In[4]:
