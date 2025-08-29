@@ -1,9 +1,5 @@
 import argparse
 
-"""
-Utility functions for parsing command line arguments related to featurization.
-"""
-
 
 def check_for_missing_args(**kwargs) -> None:
     """
@@ -14,6 +10,7 @@ def check_for_missing_args(**kwargs) -> None:
     ValueError
         If any required arguments are missing.
     """
+
     missing_args = []
     for arg, value in kwargs.items():
         if value is None:
@@ -25,6 +22,54 @@ def check_for_missing_args(**kwargs) -> None:
         )
 
 
+def parse_segmentation_args():
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument(
+        "--patient",
+        type=str,
+        default=None,
+        help="Patient ID, e.g. 'NF0014'",
+    )
+    argparser.add_argument(
+        "--well_fov",
+        type=str,
+        default=None,
+        help="Well and field of view to process, e.g. 'A01-1'",
+    )
+    argparser.add_argument(
+        "--clip_limit",
+        type=float,
+        default=0.03,
+        help="Clip limit for contrast enhancement, default is 0.03",
+    )
+    argparser.add_argument(
+        "--twoD_method",
+        type=str,
+        default="zmax",
+        choices=["zmax", "middle"],
+        help="Method for 2D projection, either 'zmax' or 'middle'. Default is 'zmax'.",
+    )
+    args = argparser.parse_args()
+    patient = args.patient
+    well_fov = args.well_fov
+    clip_limit = args.clip_limit
+    twoD_method = args.twoD_method
+
+    check_for_missing_args(
+        patient=patient,
+        well_fov=well_fov,
+        clip_limit=clip_limit,
+        twoD_method=twoD_method,
+    )
+
+    return {
+        "patient": patient,
+        "well_fov": well_fov,
+        "clip_limit": clip_limit,
+        "twoD_method": twoD_method,
+    }
+
+
 def parse_featurization_args_patient_and_well_fov() -> dict:
     """
     Parse command line arguments for featurization with patient and well field of view.
@@ -34,6 +79,7 @@ def parse_featurization_args_patient_and_well_fov() -> dict:
     dict
         Dictionary containing the parsed arguments.
     """
+
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
         "--well_fov",
@@ -71,6 +117,7 @@ def parse_featurization_args_patient() -> dict:
     dict
         Dictionary containing the parsed arguments.
     """
+
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
         "--patient",
