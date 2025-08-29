@@ -1,7 +1,16 @@
 import argparse
 
 
-def check_for_missing_args(**kwargs):
+def check_for_missing_args(**kwargs) -> None:
+    """
+    Check for missing required arguments in the provided keyword arguments.
+
+    Raises
+    ------
+    ValueError
+        If any required arguments are missing.
+    """
+
     missing_args = []
     for arg, value in kwargs.items():
         if value is None:
@@ -61,7 +70,16 @@ def parse_segmentation_args():
     }
 
 
-def parse_featurization_args_patient_and_well_fov():
+def parse_featurization_args_patient_and_well_fov() -> dict:
+    """
+    Parse command line arguments for featurization with patient and well field of view.
+
+    Returns
+    -------
+    dict
+        Dictionary containing the parsed arguments.
+    """
+
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
         "--well_fov",
@@ -90,7 +108,16 @@ def parse_featurization_args_patient_and_well_fov():
     }
 
 
-def parse_featurization_args_patient():
+def parse_featurization_args_patient() -> dict:
+    """
+    Parse command line arguments for featurization with patient ID.
+
+    Returns
+    -------
+    dict
+        Dictionary containing the parsed arguments.
+    """
+
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
         "--patient",
