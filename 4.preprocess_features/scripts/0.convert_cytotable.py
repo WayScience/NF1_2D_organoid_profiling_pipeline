@@ -49,7 +49,7 @@ if not in_notebook:
     patient = args.patient
 else:
     print("Running in a notebook")
-    patient = "NF0014"
+    patient = "SARCO361_T1"
 
 middle_slice_input = pathlib.Path(
     f"../../data/{patient}/cellprofiler_middle_slice_output/"
@@ -154,6 +154,29 @@ print(f"Total errors encountered: {errors}")
 # In[6]:
 
 
+output_dict_of_dfs = {
+    "middle_slice": {
+        "df_list": [
+            x
+            for x in pathlib.Path(
+                f"../../data/{patient}/0.converted/middle_slice/"
+            ).rglob("*.parquet")
+        ]
+    },
+    "zmax_proj": {
+        "df_list": [
+            x
+            for x in pathlib.Path(f"../../data/{patient}/0.converted/zmax_proj/").rglob(
+                "*.parquet"
+            )
+        ]
+    },
+}
+
+
+# In[7]:
+
+
 # read in the dataframes and concatenate them in place
 for featurization_type in output_dict_of_dfs.keys():
     print(
@@ -162,6 +185,7 @@ for featurization_type in output_dict_of_dfs.keys():
     df_list = [
         pd.read_parquet(df) for df in output_dict_of_dfs[featurization_type]["df_list"]
     ]
+    print(len(df_list))
     output_dict_of_dfs[featurization_type]["df"] = pd.concat(df_list, ignore_index=True)
     # Define the list of columns to prioritize and prefix
     prioritized_columns = [
@@ -210,7 +234,7 @@ for featurization_type in output_dict_of_dfs.keys():
 
 # ## Extract organoid only profiles
 
-# In[7]:
+# In[8]:
 
 
 output_dict_of_dfs = {}
@@ -221,7 +245,7 @@ for sqlite_dir in [middle_slice_input, max_projected_input]:
 output_dict_of_dfs
 
 
-# In[8]:
+# In[9]:
 
 
 total = 0
@@ -257,10 +281,9 @@ for featurization_type in well_fov_dict.keys():
             continue
 
 
-# In[9]:
+# In[10]:
 
 
-# output_dict_of_dfs['middle_slice']['df_list']
 # read in the dataframes and concatenate them in place
 for featurization_type in output_dict_of_dfs.keys():
     print(
