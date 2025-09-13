@@ -41,7 +41,7 @@ if not in_notebook:
     patient = args.patient
 else:
     print("Running in a notebook")
-    patient = "NF0014"
+    patient = "NF0014_T1"
 
 
 # ## Set paths and variables
@@ -165,12 +165,6 @@ pprint.pprint(plate_info_dictionary, indent=4)
 # ## Process data with pycytominer
 
 # In[6]:
-
-
-pd.read_parquet("../../data/NF0014/0.converted/max_projected_sc.parquet").head()
-
-
-# In[7]:
 
 
 platemap_df = pd.read_csv(paltemap_path)
