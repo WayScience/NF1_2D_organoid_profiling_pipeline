@@ -5,16 +5,32 @@
 
 # ## Import libraries
 
-# In[1]:
+# In[ ]:
 
 
 import argparse
 import pathlib
 import pprint
+import sys
 
 import pandas as pd
 from pycytominer import aggregate, annotate, feature_select, normalize
 from pycytominer.cyto_utils import infer_cp_features
+
+cwd = pathlib.Path.cwd()
+
+if (cwd / ".git").is_dir():
+    root_dir = cwd
+else:
+    root_dir = None
+    for parent in cwd.parents:
+        if (parent / ".git").is_dir():
+            root_dir = parent
+            break
+sys.path.append(str(root_dir / "utils"))
+from notebook_init_utils import init_notebook
+
+root_dir, in_notebook = init_notebook()
 
 try:
     cfg = get_ipython().config
@@ -52,9 +68,6 @@ else:
 # output path for single-cell profiles
 output_dir = pathlib.Path(f"../../data/{patient}")
 output_dir.mkdir(parents=True, exist_ok=True)
-paltemap_path = pathlib.Path(f"../../data/{patient}/platemap/platemap.csv").resolve(
-    strict=True
-)
 # operations to perform for feature selection
 feature_select_ops = [
     "variance_threshold",
@@ -167,7 +180,14 @@ pprint.pprint(plate_info_dictionary, indent=4)
 # In[6]:
 
 
-platemap_df = pd.read_csv(paltemap_path)
+drug_information_df = pd.read_csv(
+    pathlib.Path(f"{root_dir}/4.preprocess_features/data/drugs/drug_information.csv")
+)
+
+
+# In[7]:
+
+
 for plate, info in plate_info_dictionary.items():
     print(f"Performing pycytominer pipeline for {plate}")
     # make the parent directories for the output files
@@ -175,13 +195,19 @@ for plate, info in plate_info_dictionary.items():
         value.parent.mkdir(parents=True, exist_ok=True)
 
     profile_df = pd.read_parquet(info["input_path"])
-
+    platemap_df = pd.read_csv(
+        pathlib.Path(f"{root_dir}/data/{patient}/platemap/platemap.csv")
+    )
+    platemap_df.rename(columns={"well_position": "Metadata_Well"}, inplace=True)
     # Step 1: Annotation
     print("Performing annotation...")
+    platemap_df = platemap_df.merge(
+        drug_information_df, how="left", left_on="Metadata_Well", right_on="Treatment"
+    )
     annotate(
         profiles=profile_df,
         platemap=platemap_df,
-        join_on=["Metadata_well_position", "Metadata_Well"],
+        join_on=["Metadata_Well", "Metadata_Well"],
         output_file=info["annotated_path"],
         output_type="parquet",
     )
