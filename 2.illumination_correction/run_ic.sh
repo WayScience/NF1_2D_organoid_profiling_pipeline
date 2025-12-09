@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
-conda init bash
 # activate the CellProfiler environment
+conda init
 conda activate gff_cp_env
 
 # convert Jupyter notebooks to scripts
@@ -11,7 +10,15 @@ jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
 cd scripts/ || exit 1
 
-patient_array=( "NF0014" "NF0016" "NF0018" "NF0021" "NF0030" "NF0040" "SARCO219" "SARCO361" )
+git_root=$(git rev-parse --show-toplevel)
+if [ -z "$git_root" ]; then
+    echo "Error: Could not find the git root directory."
+    exit 1
+fi
+patients_file="$git_root/data/patient_IDs.txt"
+# read patient IDs from the file
+mapfile -t patient_array < "$patients_file"
+
 
 for patient in "${patient_array[@]}"; do
 echo "Processing patient: $patient"

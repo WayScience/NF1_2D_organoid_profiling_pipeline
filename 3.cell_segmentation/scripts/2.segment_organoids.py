@@ -5,11 +5,11 @@
 # The end goals is to segment cell and extract morphology features from cellprofiler.
 # These masks must be imported into cellprofiler to extract features.
 
-# In[ ]:
+# In[1]:
 
 
+import os
 import pathlib
-import sys
 
 import matplotlib.pyplot as plt
 
@@ -18,37 +18,16 @@ import numpy as np
 import skimage
 import tifffile
 import torch
+from arg_parsing_utils import check_for_missing_args, parse_args
 from cellpose import models
+from notebook_init_utils import bandicoot_check, init_notebook
 from skimage import io
 
-# check if in a jupyter notebook
-try:
-    cfg = get_ipython().config
-    in_notebook = True
-except NameError:
-    in_notebook = False
+root_dir, in_notebook = init_notebook()
+image_base_dir = bandicoot_check(
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
+)
 
-
-# Get the current working directory
-cwd = pathlib.Path.cwd()
-
-if (cwd / ".git").is_dir():
-    root_dir = cwd
-
-else:
-    root_dir = None
-    for parent in cwd.parents:
-        if (parent / ".git").is_dir():
-            root_dir = parent
-            break
-
-# Check if a Git root directory was found
-if root_dir is None:
-    raise FileNotFoundError("No Git root directory found.")
-
-sys.path.append(f"{root_dir}/utils/")
-
-from parsable_args import parse_segmentation_args
 
 # In[2]:
 
@@ -120,6 +99,7 @@ def segment_with_diameter(
 
 # test the function with three cylinders each with a different diameter
 def test_segment_with_diameter():
+    use_GPU = torch.cuda.is_available()
     diameters = [100, 250, 400, 600, 800, 1000]
     z_depth = 1  # No z-depth for 2D images
     for diameter in diameters:
@@ -150,34 +130,47 @@ if in_notebook:
     test_segment_with_diameter()
 
 
-# In[ ]:
+# In[3]:
 
 
 if not in_notebook:
-    args_dict = parse_segmentation_args()
+    args_dict = parse_args()
     patient = args_dict["patient"]
     well_fov = args_dict["well_fov"]
     clip_limit = args_dict["clip_limit"]
     twoD_method = args_dict["twoD_method"]
+    overwrite = args_dict.get("overwrite", False)
+    check_for_missing_args(
+        patient=patient,
+        well_fov=well_fov,
+        clip_limit=clip_limit,
+        twoD_method=twoD_method,
+    )
 else:
     print("Running in a notebook")
-    patient = "NF0014"
-    well_fov = "C2-2"
-    clip_limit = 0.01
-    twoD_method = "zmax"
+    patient = "NF0014_T1"
+    well_fov = "D2-1"
+    clip_limit = 0.02
+    twoD_method = "middle_n"
+    overwrite = True
 
 if twoD_method == "middle":
     input_dir = pathlib.Path(
-        f"{root_dir}/data/{patient}/middle_slice_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/1b.middle_slice_illum_correction/{well_fov}"
     ).resolve(strict=True)
 
 elif twoD_method == "zmax":
     input_dir = pathlib.Path(
-        f"{root_dir}/data/{patient}/zmax_proj_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/1a.zmax_proj_illum_correction/{well_fov}"
+    ).resolve(strict=True)
+elif twoD_method == "middle_n":
+    input_dir = pathlib.Path(
+        f"{image_base_dir}/data/{patient}/2D_analysis/1c.middle_n_slice_max_proj_illum_correction/{well_fov}"
     ).resolve(strict=True)
 else:
     raise ValueError(f"Unknown twoD_method: {twoD_method}")
 
+labels_path = input_dir / f"{well_fov}_organoid_masks.tiff"
 mask_path = input_dir
 
 
@@ -186,85 +179,59 @@ mask_path = input_dir
 # In[4]:
 
 
-image_extensions = {".tif", ".tiff"}
-files = sorted(input_dir.glob("*"))
-files = [str(x) for x in files if x.suffix in image_extensions]
+if not overwrite and labels_path.exists():
+    print(f"Labels file {labels_path} already exists. Skipping segmentation.")
+elif overwrite or not labels_path.exists():
+    image_extensions = {".tif", ".tiff"}
+    files = sorted(input_dir.glob("*"))
+    files = [str(x) for x in files if x.suffix in image_extensions]
+    # find the cytoplasmic channels in the image set
+    for f in files:
+        if "405" in f:
+            pass
+        elif "488" in f:
+            pass
+        elif "555" in f:
+            cyto = io.imread(f)
+        elif "640" in f:
+            pass
+        elif "TRANS" in f:
+            pass
+        elif "mask" in f:
+            pass
+        else:
+            print(f"Unknown channel: {f}")
+    # # Use butterworth FFT filter to remove high frequency noise :)
+    cyto = skimage.filters.butterworth(
+        cyto,
+        cutoff_frequency_ratio=0.05,
+        high_pass=False,
+        order=1,
+        squared_butterworth=True,
+    )
+
+    # add a guassian blur to the image
+    imgs = skimage.filters.gaussian(cyto, sigma=1)
+    use_GPU = torch.cuda.is_available()
+    # Load the model
+    model_name = "cyto3"
+    model = models.CellposeModel(gpu=use_GPU, model_type=model_name)
+
+    # Perform segmentation of whole organoids with initial diameter of 750
+    labels, details, _ = segment_with_diameter(
+        imgs,
+        model=model,
+        channels=[1, 0],
+        z_axis=0,
+        diameter=1000,  # initial diameter in pixels
+        min_diameter=100,  # in pixels, default is 250
+        diameter_step=100,  # in pixels, default is 200
+    )
+    # Save the labels
+    tifffile.imwrite(labels_path, labels.astype(np.uint16))
 
 
 # In[5]:
-
-
-# find the cytoplasmic channels in the image set
-for f in files:
-    if "405" in f:
-        pass
-    elif "488" in f:
-        pass
-    elif "555" in f:
-        cyto = io.imread(f)
-    elif "640" in f:
-        pass
-    elif "TRANS" in f:
-        pass
-    elif "mask" in f:
-        pass
-    else:
-        print(f"Unknown channel: {f}")
-
-
-# In[6]:
-
-
-# # Use butterworth FFT filter to remove high frequency noise :)
-cyto = skimage.filters.butterworth(
-    cyto,
-    cutoff_frequency_ratio=0.05,
-    high_pass=False,
-    order=1,
-    squared_butterworth=True,
-)
-
-# add a guassian blur to the image
-imgs = skimage.filters.gaussian(cyto, sigma=1)
-if in_notebook:
-    # plot the nuclei and the cyto channels
-    plt.figure(figsize=(10, 10))
-    plt.subplot(121)
-    plt.imshow(cyto, cmap="gray")
-    plt.title("Raw cyto")
-    plt.axis("off")
-    plt.subplot(122)
-    plt.imshow(imgs, cmap="gray")
-    plt.title("Butterworth filtered cyto")
-    plt.axis("off")
-    plt.show()
-
-
-# In[7]:
-
-
-use_GPU = torch.cuda.is_available()
-# Load the model
-model_name = "cyto3"
-model = models.CellposeModel(gpu=use_GPU, model_type=model_name)
-
-
-# Perform segmentation of whole organoids with initial diameter of 750
-labels, details, _ = segment_with_diameter(
-    cyto,
-    model=model,
-    channels=[1, 0],
-    z_axis=0,
-    diameter=1000,  # initial diameter in pixels
-    min_diameter=200,  # in pixels, default is 250
-    diameter_step=200,  # in pixels, default is 200
-)
-# Save the labels
-labels_path = input_dir / f"{well_fov}_organoid_masks.tiff"
-tifffile.imwrite(labels_path, labels.astype(np.uint16))
-
-
-# In[8]:
 
 
 if in_notebook:

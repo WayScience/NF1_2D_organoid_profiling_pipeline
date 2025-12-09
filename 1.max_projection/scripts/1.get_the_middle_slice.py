@@ -1,66 +1,48 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
-import argparse
+import os
 import pathlib
-import sys
 
 import tifffile
 import tqdm
+from arg_parsing_utils import check_for_missing_args, parse_args
+from notebook_init_utils import bandicoot_check, init_notebook
 
-# check if in a jupyter notebook
-try:
-    cfg = get_ipython().config
-    in_notebook = True
-except NameError:
-    in_notebook = False
+root_dir, in_notebook = init_notebook()
+image_base_dir = bandicoot_check(
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
+)
 
-
-# Get the current working directory
-cwd = pathlib.Path.cwd()
-
-if (cwd / ".git").is_dir():
-    root_dir = cwd
-
-else:
-    root_dir = None
-    for parent in cwd.parents:
-        if (parent / ".git").is_dir():
-            root_dir = parent
-            break
-
-# Check if a Git root directory was found
-if root_dir is None:
-    raise FileNotFoundError("No Git root directory found.")
-
-sys.path.append(f"{root_dir}/utils/")
-
-from parsable_args import parse_featurization_args_patient
 
 # In[2]:
 
 
-
 if not in_notebook:
-    args_dict = parse_featurization_args_patient()
+    args_dict = parse_args()
     patient = args_dict["patient"]
+    check_for_missing_args(
+        patient=patient,
+    )
 else:
-    patient = "NF0014"
+    patient = "NF0016_T1"
 
 
-# In[ ]:
+# In[3]:
 
 
 # input images directory
-images_dir = pathlib.Path(f"{root_dir}/data/{patient}/zstack_images/").resolve(
+images_dir = pathlib.Path(f"{image_base_dir}/data/{patient}/zstack_images/").resolve(
     strict=True
 )
 # output images directory
-output_dir = pathlib.Path(f"{root_dir}/data/{patient}/middle_slice/").resolve()
-
+output_dir = pathlib.Path(
+    f"{image_base_dir}/data/{patient}/2D_analysis/0b.middle_slice/"
+).resolve()
+output_dir.mkdir(parents=True, exist_ok=True)
 
 
 # In[4]:
@@ -70,6 +52,10 @@ output_dir = pathlib.Path(f"{root_dir}/data/{patient}/middle_slice/").resolve()
 tiff_files = list(images_dir.rglob("*.tif"))
 tiff_files.sort()
 for tiff_file in tqdm.tqdm(tiff_files):
+    output_file_dir = output_dir / str(tiff_file.parent).split("/")[-1] / tiff_file.name
+    output_file_dir.parent.mkdir(parents=True, exist_ok=True)
+    if output_file_dir.exists():
+        continue
     # load the first tiff file to get the metadata
     image = tifffile.TiffFile(tiff_file)
     number_of_slices = image.series[0].shape[0]
@@ -78,6 +64,5 @@ for tiff_file in tqdm.tqdm(tiff_files):
     # get the middle slice
     middle_slice = image.series[0].asarray()[middle_slice_index, :, :]
     # save the middle slice as a new tiff file
-    output_file_dir = output_dir / str(tiff_file.parent).split("/")[-1] / tiff_file.name
-    output_file_dir.parent.mkdir(parents=True, exist_ok=True)
+
     tifffile.imwrite(output_file_dir, middle_slice)

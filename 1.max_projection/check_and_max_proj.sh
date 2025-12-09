@@ -1,5 +1,7 @@
 #!/bin/bash
 
+jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
+
 git_root=$(git rev-parse --show-toplevel)
 if [ -z "$git_root" ]; then
     echo "Error: Could not find the git root directory."
@@ -22,12 +24,13 @@ conda init bash
 conda activate gff_preprocessing_env
 
 
-cd scripts || exit
+cd "$git_root/1.max_projection/scripts" || exit
 # run Python script for checking for incomplete sets and cleaning
 for patient in "${patient_array[@]}"; do
     echo "Processing patient: $patient"
     python 0.cp_max_projection.py --patient "$patient"
     python 1.get_the_middle_slice.py --patient "$patient"
+    python 2.get_the_middle_N_slice_max_proj.py --patient "$patient"
 done
 
 conda deactivate
