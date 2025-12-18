@@ -15,3 +15,13 @@ To perform illumination correction, use the below command:
 # make sure you are in the 2.illumination_correction directory
 source run_IC.sh
 ```
+
+
+## Patient well fovs that failed zstacking and thus illumination correction
+| Patient ID | Well | Removed from zstack data? |
+|------------|------|----------------------------|
+| NF0016_T1 | D11-2 | Yes |
+| NF0018_T6 | E11-3 | Yes |
+| NF0018_T6 | E8-5 | Yes |
+| NF0040_T1 | G7-3 | Yes |
+

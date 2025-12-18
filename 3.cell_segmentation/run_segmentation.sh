@@ -6,147 +6,78 @@ conda init bash
 conda activate GFF_segmentation
 jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
-overwrite="TRUE"
-
-git_root=$(git rev-parse --show-toplevel)
-if [ -z "$git_root" ]; then
-    echo "Error: Could not find the git root directory."
-    exit 1
-fi
-
-patients_file="$git_root/data/patient_IDs.txt"
-# read patient IDs from the file
-mapfile -t patients < "$patients_file"
-
-bandicoot_path="${HOME}/mnt/bandicoot/NF1_organoid_data/"
-
-# if bandicoot path exists, set the data path to bandicoot
-if [ -d "$bandicoot_path" ]; then
-    echo "Bandicoot path found. Setting data path to Bandicoot."
-    git_root="$bandicoot_path"
-else
-    echo "Bandicoot path not found. Using local git repository data path."
-fi
+overwrite="FALSE"
+twoD_methods=( "zmax" "middle" "middle_n" )
+input_file="loadfiles/segmentation_loadfile.txt"
 
 mkdir -p "logs"
+patient_well_fov_counter=0
+# get the number of lines in the input file
+total_lines=$(wc -l < "$input_file")
 
-total_patients=${#patients[@]}
-patient_counter=0
+while IFS= read -r line; do
+    ((patient_well_fov_counter++))
 
-echo "Starting cell segmentation for $total_patients patients..."
-echo "========================================="
+    # split the line into an array
+    IFS=$'\t' read -r -a parts <<< "$line"
 
-patients=( "NF0014_T1" )
+    patient="${parts[0]}"
+    well_fov="${parts[1]}"
 
-for patient in "${patients[@]}"; do
-    ((patient_counter++))
-    z_stack_dir="$git_root/data/$patient/zstack_images"
+    echo "  [$patient_well_fov_counter/$total_lines] Processing $patient - $well_fov"
 
-    mapfile -t well_fovs < <(ls -d "$z_stack_dir"/*)
+    # create the log file
+    log_file="logs/segment_organoids_${patient}_${well_fov}.log"
+    if [ -f "$log_file" ]; then
+        rm "$log_file"
+    fi
+    mkdir -p "$(dirname "$log_file")"
+    touch "$log_file"
 
-    total_dirs=${#well_fovs[@]}
-    echo "[$patient_counter/$total_patients] Processing patient: $patient"
-    echo "  Found $total_dirs well_fovs to process"
+    for twoD_method in "${twoD_methods[@]}"; do
+    # run Python script for running preprocessing of morphology profiles
+        if [ $overwrite = "TRUE" ] ; then
+            python -u scripts/0.segment_nuclei.py \
+                --patient "$patient" \
+                --well_fov "$well_fov" \
+                --clip_limit 0.03 \
+                --twoD_method "$twoD_method" \
+                --overwrite
 
-    twoD_methods=( "zmax" "middle" "middle_n" )
-    well_fov_counter=0
+            python scripts/1.segment_cells.py \
+                --patient "$patient" \
+                --well_fov "$well_fov" \
+                --clip_limit 0.01 \
+                --twoD_method "$twoD_method" \
+                --overwrite
+            python scripts/2.segment_organoids.py \
+                --patient "$patient" \
+                --well_fov "$well_fov" \
+                --clip_limit 0.01 \
+                --twoD_method "$twoD_method" \
+                --overwrite
+        else
+            python -u scripts/0.segment_nuclei.py \
+                --patient "$patient" \
+                --well_fov "$well_fov" \
+                --clip_limit 0.03 \
+                --twoD_method "$twoD_method"
 
-    # Calculate total tasks for this patient
-    total_tasks=$((total_dirs * ${#twoD_methods[@]}))
-    task_counter=0
+            python scripts/1.segment_cells.py \
+                --patient "$patient" \
+                --well_fov "$well_fov" \
+                --clip_limit 0.01 \
+                --twoD_method "$twoD_method"
 
-    # loop through all input directories
-    for well_fov in "${well_fovs[@]}"; do
-        ((well_fov_counter++))
-        well_fov=${well_fov%*/}
-        well_fov=$(basename "$well_fov")
-
-        echo "  [$well_fov_counter/$total_dirs] Processing well_fov: $well_fov"
-
-        # create the log file
-        log_file="logs/segment_organoids_${patient}_${well_fov}.log"
-        if [ -f "$log_file" ]; then
-            rm "$log_file"
+            python scripts/2.segment_organoids.py \
+                --patient "$patient" \
+                --well_fov "$well_fov" \
+                --clip_limit 0.01 \
+                --twoD_method "$twoD_method"
         fi
-        mkdir -p "$(dirname "$log_file")"
-        touch "$log_file"
-
-        for twoD_method in "${twoD_methods[@]}"; do
-            ((task_counter++))
-
-            # Calculate progress percentage
-            progress=$((task_counter * 100 / total_tasks))
-
-            echo "    [$task_counter/$total_tasks] ($progress%) Processing $twoD_method method..."
-
-            # run Python script for running preprocessing of morphology profiles
-            {
-                echo "=== Starting segmentation pipeline for $patient - $well_fov - $twoD_method at $(date) ==="
-
-                if [ $overwrite = "TRUE" ] ; then
-                    echo "Step 1/3: Nuclei segmentation..."
-                    python -u scripts/0.segment_nuclei.py \
-                        --patient "$patient" \
-                        --well_fov "$well_fov" \
-                        --clip_limit 0.03 \
-                        --twoD_method "$twoD_method" \
-                        --overwrite
-                    echo "✓ Nuclei segmentation completed"
-
-                    echo "Step 2/3: Cell segmentation..."
-                    python scripts/1.segment_cells.py \
-                        --patient "$patient" \
-                        --well_fov "$well_fov" \
-                        --clip_limit 0.01 \
-                        --twoD_method "$twoD_method" \
-                        --overwrite
-                    echo "✓ Cell segmentation completed"
-
-                    echo "Step 3/3: Organoid segmentation..."
-                    python scripts/2.segment_organoids.py \
-                        --patient "$patient" \
-                        --well_fov "$well_fov" \
-                        --clip_limit 0.01 \
-                        --twoD_method "$twoD_method" \
-                        --overwrite
-                    echo "✓ Organoid segmentation completed"
-                else
-                    echo "Step 1/3: Nuclei segmentation..."
-                    python -u scripts/0.segment_nuclei.py \
-                        --patient "$patient" \
-                        --well_fov "$well_fov" \
-                        --clip_limit 0.03 \
-                        --twoD_method "$twoD_method"
-                    echo "✓ Nuclei segmentation completed"
-
-                    echo "Step 2/3: Cell segmentation..."
-                    python scripts/1.segment_cells.py \
-                        --patient "$patient" \
-                        --well_fov "$well_fov" \
-                        --clip_limit 0.01 \
-                        --twoD_method "$twoD_method"
-                    echo "✓ Cell segmentation completed"
-
-                    echo "Step 3/3: Organoid segmentation..."
-                    python scripts/2.segment_organoids.py \
-                        --patient "$patient" \
-                        --well_fov "$well_fov" \
-                        --clip_limit 0.01 \
-                        --twoD_method "$twoD_method"
-                    echo "✓ Organoid segmentation completed"
-
-                echo "=== Completed segmentation pipeline at $(date) ==="
-                echo ""
-                fi
-            } >> "$log_file" 2>&1
-
-            echo "    ✓ Completed $twoD_method method"
-        done
-        echo "  ✓ Completed well_fov: $well_fov"
     done
-    echo "✓ [$patient_counter/$total_patients] Completed processing for patient: $patient"
-    echo "-----------------------------------------"
-done
+done < "$input_file"
+
 
 
 conda deactivate
@@ -154,5 +85,3 @@ conda deactivate
 echo ""
 echo "========================================="
 echo "✓ Cell segmentation preprocessing completed successfully!"
-echo "Processed $total_patients patients with all well_fovs and methods."
-echo "Check logs in: $git_root/3.cell_segmentation/logs/"

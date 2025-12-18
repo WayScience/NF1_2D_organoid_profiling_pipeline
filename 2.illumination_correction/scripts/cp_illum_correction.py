@@ -10,6 +10,7 @@
 
 import os
 import pathlib
+import pprint
 
 from arg_parsing_utils import check_for_missing_args, parse_args
 from notebook_init_utils import bandicoot_check, init_notebook
@@ -33,7 +34,7 @@ if not in_notebook:
         patient=patient,
     )
 else:
-    patient = "NF0016_T1"
+    patient = "NF0018_T6"
 
 
 # ## Set paths and variables
@@ -69,7 +70,7 @@ well_fovs = [x.stem for x in well_fovs]
 
 # ## Create dictionary to process data
 
-# In[ ]:
+# In[5]:
 
 
 plate_info_dictionary = {}
@@ -84,7 +85,7 @@ for well_fov in well_fovs:
         ).resolve(),
         "path_to_pipeline": path_to_pipeline,
     }
-    plate_info_dictionary[f"middle_slice{well_fov}"] = {
+    plate_info_dictionary[f"middle_slice_{well_fov}"] = {
         "path_to_images": pathlib.Path(
             f"{image_base_dir}/data/{patient}/2D_analysis/0b.middle_slice/{well_fov}"
         ).resolve(),
@@ -93,7 +94,7 @@ for well_fov in well_fovs:
         ).resolve(),
         "path_to_pipeline": path_to_pipeline,
     }
-    plate_info_dictionary[f"middle_n_slice_max_proj{well_fov}"] = {
+    plate_info_dictionary[f"middle_n_slice_max_proj_{well_fov}"] = {
         "path_to_images": pathlib.Path(
             f"{image_base_dir}/data/{patient}/2D_analysis/0c.middle_n_slice_max_proj/{well_fov}"
         ).resolve(),
@@ -107,11 +108,43 @@ for well_fov in well_fovs:
 # In[6]:
 
 
+# only run well_fovs if < 4 files in the output directory
+filtered_plate_info_dictionary = {}
+missing_list = []
+for well_fov_key in plate_info_dictionary:
+    output_dir = plate_info_dictionary[well_fov_key]["path_to_output"]
+    num_files = len(list(output_dir.glob("*.tiff")))
+    if num_files < 4:
+        filtered_plate_info_dictionary[well_fov_key] = plate_info_dictionary[
+            well_fov_key
+        ]
+        missing_list.append(output_dir)
+well_fovs = list(filtered_plate_info_dictionary.keys())
+well_fovs = [x.split("_")[-1] for x in well_fovs]
+pprint.pprint(filtered_plate_info_dictionary)
+
+
+# In[7]:
+
+
 print(f"""Now runnning illumination correction for
         patient: {patient}
         and {len(well_fovs)} wells
         for both zmax_proj and middle_slice
-        bringing us to a total of {len(plate_info_dictionary)} runs""")
+        bringing us to a total of {len(filtered_plate_info_dictionary)} runs""")
+
+
+# In[8]:
+
+
+# delete the output directories for CP rerun if they exist
+for key in filtered_plate_info_dictionary:
+    output_dir = filtered_plate_info_dictionary[key]["path_to_output"]
+    if output_dir.exists():
+        print(f"Deleting existing output directory: {output_dir}")
+        for file in output_dir.glob("*"):
+            file.unlink()
+        output_dir.rmdir()
 
 
 # ## Perform illumination correction on data
@@ -120,9 +153,12 @@ print(f"""Now runnning illumination correction for
 #
 # Note: This code cell was not ran as we prefer to perform CellProfiler processing tasks via `sh` file (bash script) which is more stable.
 
-# In[7]:
+# In[9]:
 
 
-cp_parallel.run_cellprofiler_parallel(
-    plate_info_dictionary=plate_info_dictionary, run_name=run_name
-)
+if len(filtered_plate_info_dictionary) == 0:
+    print("All illumination correction outputs already exist. Exiting.")
+else:
+    cp_parallel.run_cellprofiler_parallel(
+        plate_info_dictionary=filtered_plate_info_dictionary, run_name=run_name
+    )

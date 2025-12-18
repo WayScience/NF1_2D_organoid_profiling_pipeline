@@ -148,8 +148,8 @@ if not in_notebook:
     )
 else:
     print("Running in a notebook")
-    patient = "NF0014_T1"
-    well_fov = "D2-1"
+    patient = "NF0040_T1"
+    well_fov = "E7-1"
     clip_limit = 0.02
     twoD_method = "middle_n"
     overwrite = True
@@ -176,12 +176,10 @@ mask_path = input_dir
 
 # ## Set up images, paths and functions
 
-# In[4]:
+# In[ ]:
 
 
-if not overwrite and labels_path.exists():
-    print(f"Labels file {labels_path} already exists. Skipping segmentation.")
-elif overwrite or not labels_path.exists():
+if overwrite or not labels_path.exists():
     image_extensions = {".tif", ".tiff"}
     files = sorted(input_dir.glob("*"))
     files = [str(x) for x in files if x.suffix in image_extensions]

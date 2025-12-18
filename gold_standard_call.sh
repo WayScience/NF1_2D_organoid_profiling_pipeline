@@ -9,7 +9,7 @@ DOWNLOAD=FALSE
 PREPROCESS=FALSE
 ILLUMINATION_CORRECTION=FALSE
 SEGMENT=TRUE
-EXTRACT_FEATURES=FALSE
+EXTRACT_FEATURES=TRUE
 IMAGE_BASED_PROFILING=FALSE
 ANALYSIS=FALSE
 
@@ -54,7 +54,9 @@ fi
 ##################################
 if [ "$SEGMENT" = TRUE ] ; then
     echo "Running Cell Segmentation Module..."
-    bash 3.cell_segmentation/run_segmentation.sh
+    cd 3.cell_segmentation || exit
+    source run_segmentation.sh
+    cd .. || exit
 else
     echo "Skipping Cell Segmentation Module..."
 fi
@@ -64,7 +66,9 @@ fi
 ##################################
 if [ "$EXTRACT_FEATURES" = TRUE ] ; then
     echo "Running Feature Extraction Module..."
-    bash 3.feature_extraction/run_local_featurization.sh
+    cd 3.feature_extraction || exit
+    source run_local_featurization.sh
+    cd .. || exit
 else
     echo "Skipping Feature Extraction Module..."
 fi
@@ -75,7 +79,9 @@ fi
 ##################################
 if [ "$IMAGE_BASED_PROFILING" = TRUE ] ; then
     echo "Running Image-based Profiling Module..."
-    bash 4.preprocess_features/run_preprocessing.sh
+    cd 4.preprocess_features || exit
+    source run_preprocessing.sh
+    cd .. || exit
 else
     echo "Skipping Image-based Profiling Module..."
 fi
@@ -86,7 +92,9 @@ fi
 ##################################
 if [ "$ANALYSIS" = TRUE ] ; then
     echo "Running Analysis Module..."
-    bash 5.analyze_data/run_eda.sh
+    cd 5.analyze_data || exit
+    source run_eda.sh
+    cd .. || exit
 else
     echo "Skipping Analysis Module..."
 fi
