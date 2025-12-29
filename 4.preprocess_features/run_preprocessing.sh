@@ -18,8 +18,9 @@ for patient in "${patient_array[@]}"; do
     # run Python script for running preprocessing of morphology profiles
     python 0.convert_cytotable.py --patient "$patient"
     python 1.single_cell_processing.py --patient "$patient"
-
 done
+
+python 2.combine_patients.py
 
 cd ../ || exit
 
