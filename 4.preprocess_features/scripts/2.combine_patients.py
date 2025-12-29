@@ -184,7 +184,21 @@ for profile_type in levels_to_merge_dict.keys():
 # In[ ]:
 
 
-# In[8]:
+stratafy_cols = [
+    "Metadata_patient_tumor",
+    "Metadata_patient",
+    "Metadata_tumor",
+    "Metadata_Well",
+    "Metadata_treatment",
+    "Metadata_dose",
+    "Metadata_unit",
+    "Metadata_Target",
+    "Metadata_Class",
+    "Metadata_Therapeutic_Categories",
+]
+
+
+# In[ ]:
 
 
 for profile_type in dict_of_dfs_to_process.keys():
@@ -236,18 +250,7 @@ for profile_type in dict_of_dfs_to_process.keys():
             # aggregate the profiles
             sc_agg_df = aggregate(
                 population_df=fs_profiles,
-                strata=[
-                    "Metadata_patient_tumor",
-                    "Metadata_patient",
-                    "Metadata_tumor",
-                    "Metadata_Well",
-                    "Metadata_treatment",
-                    "Metadata_dose",
-                    "Metadata_unit",
-                    "Metadata_Target",
-                    "Metadata_Class",
-                    "Metadata_Therapeutic_Categories",
-                ],
+                strata=stratafy_cols,
                 features=feature_columns,
                 operation="median",
             )
@@ -258,17 +261,7 @@ for profile_type in dict_of_dfs_to_process.keys():
             # consensus profiles
             sc_consensus_df = aggregate(
                 population_df=fs_profiles,
-                strata=[
-                    "Metadata_patient_tumor",
-                    "Metadata_patient",
-                    "Metadata_tumor",
-                    "Metadata_treatment",
-                    "Metadata_dose",
-                    "Metadata_unit",
-                    "Metadata_Target",
-                    "Metadata_Class",
-                    "Metadata_Therapeutic_Categories",
-                ],
+                strata=stratafy_cols,
                 features=feature_columns,
                 operation="median",
             )
@@ -322,18 +315,7 @@ for profile_type in dict_of_dfs_to_process.keys():
             # aggregate the profiles
             agg_df = aggregate(
                 population_df=fs_profiles,
-                strata=[
-                    "Metadata_patient_tumor",
-                    "Metadata_patient",
-                    "Metadata_tumor",
-                    "Metadata_Well",
-                    "Metadata_treatment",
-                    "Metadata_dose",
-                    "Metadata_unit",
-                    "Metadata_Target",
-                    "Metadata_Class",
-                    "Metadata_Therapeutic_Categories",
-                ],
+                strata=stratafy_cols,
                 features=feature_columns,
                 operation="median",
             )
@@ -344,18 +326,7 @@ for profile_type in dict_of_dfs_to_process.keys():
             # consensus profiles
             consensus_df = aggregate(
                 population_df=fs_profiles,
-                strata=[
-                    "Metadata_patient_tumor",
-                    "Metadata_patient",
-                    "Metadata_tumor",
-                    "Metadata_Well",
-                    "Metadata_treatment",
-                    "Metadata_dose",
-                    "Metadata_unit",
-                    "Metadata_Target",
-                    "Metadata_Class",
-                    "Metadata_Therapeutic_Categories",
-                ],
+                strata=stratafy_cols,
                 features=feature_columns,
                 operation="median",
             )
