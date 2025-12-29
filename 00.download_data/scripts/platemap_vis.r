@@ -51,10 +51,8 @@ for (plate in list_of_platemaps) {
 
 for (plate in names(platemap_dfs)) {
     output_file <- output_platemap_files[[plate]]
-
     # Access the dataframe directly
     current_platemap <- platemap_dfs[[plate]]
-
     platemap <- platetools::raw_map(
         data = current_platemap$treatment,
         well = current_platemap$well_position,
@@ -71,9 +69,9 @@ for (plate in names(platemap_dfs)) {
             legend.text = element_text(size = 8),
             legend.title = element_text(size = 9)
         ) +
+        labs(fill = "Treatment") +
         geom_point(aes(shape = current_platemap$dose)) +
         scale_shape_discrete(name = "Dose") +
-        # scale_fill_manual(values = okabe_ito, name = "Treatment") +
         guides(
             shape = guide_legend(order = 2, nrow = 1, override.aes = list(size = 3)),
             fill = guide_legend(order = 1, ncol = 2, override.aes = list(size = 3))
