@@ -4,64 +4,61 @@
 # In[1]:
 
 
+import os
 import pathlib
 import pprint
-import sys
 
 import pandas as pd
 
-# Get the current working directory
-cwd = pathlib.Path.cwd()
+# Get from arg_parsing_utils import check_for_missing_args, parse_args
+from notebook_init_utils import bandicoot_check, init_notebook
 
-if (cwd / ".git").is_dir():
-    root_dir = cwd
-
-else:
-    root_dir = None
-    for parent in cwd.parents:
-        if (parent / ".git").is_dir():
-            root_dir = parent
-            break
-
-# Check if a Git root directory was found
-if root_dir is None:
-    raise FileNotFoundError("No Git root directory found.")
-
-sys.path.append(f"{root_dir}/utils/")
-# check if in a jupyter notebook
-try:
-    cfg = get_ipython().config
-    in_notebook = True
-except NameError:
-    in_notebook = False
+root_dir, in_notebook = init_notebook()
+image_base_dir = bandicoot_check(
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
+)
 
 
 # In[2]:
 
 
-patients_dir = pathlib.Path(f"{root_dir}/data/").resolve(
+patients_dir = pathlib.Path(f"{image_base_dir}/data/").resolve(
     strict=True
 )  # directory containing patient folders
+
+patient_list_file = pathlib.Path(f"{root_dir}/data/patient_IDs.txt").resolve(
+    strict=True
+)
+patients = pd.read_csv(patient_list_file, header=None)[0].tolist()
+
 # get a list of patient directories
-patient_dirs = [d for d in patients_dir.iterdir() if d.is_dir()]
-patient_dirs
+patient_dirs = [d for d in patients_dir.iterdir() if d.is_dir() and d.name in patients]
+
+patient_dirs.sort()
+
+
+# In[3]:
+
+
 # get a list of the well_fov directories for each patient
 well_fov_dirs = [
     x
-    for patient in patient_dirs
-    for x in pathlib.Path(f"{patient}/middle_slice_illum_correction").iterdir()
+    for patient_dir in patient_dirs
+    for x in pathlib.Path(
+        f"{patient_dir}/2D_analysis/1b.middle_slice_illum_correction"
+    ).iterdir()
     if x.is_dir()
 ]
 well_fov_dirs.sort()
 well_fov_df = pd.DataFrame(well_fov_dirs, columns=["dir_path"])
 well_fov_df["patient"] = well_fov_df["dir_path"].apply(
-    lambda x: str(x.parent).split("/")[-2]
+    lambda x: str(x.parent).split("/")[-3]
 )
 well_fov_df["well_fov"] = well_fov_df["dir_path"].apply(lambda x: x.stem)
 well_fov_df
 
 
-# In[3]:
+# In[4]:
 
 
 present_files = 0
@@ -87,8 +84,27 @@ for index, row in well_fov_df.iterrows():
     else:
         present_files += 1
 
+
+# In[5]:
+
+
+reruns_df = pd.DataFrame(missing_files_list, columns=["dir_path"])
+reruns_df["patient"] = reruns_df["dir_path"].apply(lambda x: str(x).split("/")[-3])
+reruns_df["well_fov"] = reruns_df["dir_path"].apply(lambda x: str(x).split("/")[-1])
+reruns_df.drop(columns=["dir_path"], inplace=True)
+reruns_df.drop_duplicates(inplace=True)
+pathlib.Path("../loadfiles/").mkdir(parents=True, exist_ok=True)
+reruns_df.to_csv(
+    f"../loadfiles/featurization_loadfile.txt", index=False, sep="\t", header=False
+)
+
+
+# In[6]:
+
+
 print(f"Total directories checked: {len(well_fov_df) * 2}")
 print(f"Present directories: {present_files}")
 print(f"Missing directories: {missing_files}")
 print("Missing directories list:")
-pprint.pprint(missing_files_list)
+if missing_files < 50:
+    pprint.pprint(missing_files_list)

@@ -5,58 +5,46 @@ conda init bash
 # activate the preprocessing environment
 conda activate GFF_cellprofiler
 
-git_root=$(git rev-parse --show-toplevel)
-if [ -z "$git_root" ]; then
-    echo "Error: Could not find the git root directory."
-    exit 1
-fi
+jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
-patients_file="$git_root/data/patient_IDs.txt"
-# read patient IDs from the file
-mapfile -t patients < "$patients_file"
+input_file="../loadfiles/featurization_loadfile.txt"
 
-total_patients=${#patients[@]}
-patient_counter=0
-
-echo "Starting feature extraction for $total_patients patients..."
-echo "========================================="
-
-for patient in "${patients[@]}"; do
-    ((patient_counter++))
-
-    z_stack_dir="$git_root/data/$patient/zstack_images"
-
-    mapfile -t well_fovs < <(ls -d "$z_stack_dir"/*)
-
-    total_tasks=${#well_fovs[@]}
-    echo "[$patient_counter/$total_patients] Processing patient: $patient"
-
-    well_fov_counter=0
-
-    total_dirs=$(echo "${well_fovs[@]}" | wc -w)
-    echo "Total directories: $total_dirs"
-    # loop through all input directories
-    for well_fov in "${well_fovs[@]}"; do
-        ((well_fov_counter++))
-
-        well_fov=${well_fov%*/}
-        well_fov=$(basename "$well_fov")
-        echo "Processing well_fov: $well_fov"
-        progress=$((well_fov_counter * 100 / total_tasks))
-        echo "    [$well_fov_counter/$total_tasks] ($progress%) Processing $well_fov method..."
+cd scripts/ || exit
+# set the counter to zero
+patient_well_fov_counter=0
+# get the number of lines in the input file
+total_lines=$(wc -l < "$input_file")
 
 
-        python "$git_root"/3.feature_extraction/scripts/cp_analysis.py \
+while IFS= read -r line; do
+    ((patient_well_fov_counter++))
+
+    # split the line into an array
+    IFS=$'\t' read -r -a parts <<< "$line"
+
+    patient="${parts[0]}"
+    well_fov="${parts[1]}"
+
+    echo "  [$patient_well_fov_counter/$total_lines] Processing $patient - $well_fov"
+
+    log_file="../logs/featurize_organoids_${patient}_${well_fov}.log"
+    if [ -f "$log_file" ]; then
+        rm "$log_file"
+    fi
+    mkdir -p "$(dirname "$log_file")"
+    touch "$log_file"
+
+    # call cellprofiler to run the analysis
+    # this script runs all three max projection methods in parallel
+    {
+        python cp_analysis.py \
             --patient "$patient" \
             --well_fov "$well_fov"
+    } &> "$log_file"
 
-        echo "  ✓ Completed well_fov: $well_fov"
+done < "$input_file"
 
-    done
-    echo "✓ [$patient_counter/$total_patients] Completed processing for patient: $patient"
-    echo "-----------------------------------------"
-done
-
+cd ../ || exit
 
 conda deactivate
 
