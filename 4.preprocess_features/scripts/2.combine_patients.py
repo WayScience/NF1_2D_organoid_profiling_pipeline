@@ -1,30 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
+import os
 import pathlib
-import sys
 
 import duckdb
 import pandas as pd
+from notebook_init_utils import bandicoot_check, init_notebook
 from pycytominer import aggregate, feature_select
 
-cwd = pathlib.Path.cwd()
-
-if (cwd / ".git").is_dir():
-    root_dir = cwd
-else:
-    root_dir = None
-    for parent in cwd.parents:
-        if (parent / ".git").is_dir():
-            root_dir = parent
-            break
-sys.path.append(str(root_dir / "utils"))
-from notebook_init_utils import init_notebook
-
 root_dir, in_notebook = init_notebook()
+profile_base_dir = bandicoot_check(
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
+)
 
 profile_base_dir = root_dir
 
@@ -49,11 +40,15 @@ all_patients_output_path.mkdir(parents=True, exist_ok=True)
 
 
 levels_to_merge_dict = {
+    "max_projection": {
+        "sc": [],
+        "organoid": [],
+    },
     "middle_slice": {
         "sc": [],
         "organoid": [],
     },
-    "max_projection": {
+    "middle_n_slice": {
         "sc": [],
         "organoid": [],
     },
@@ -64,18 +59,23 @@ levels_to_merge_dict = {
 
 
 for patient in patients:
-    norm_path = pathlib.Path(f"{profile_base_dir}/data/{patient}/2.normalized")
+    norm_path = pathlib.Path(
+        f"{profile_base_dir}/data/{patient}/2D_analysis/5.normalized"
+    )
     for file in norm_path.glob("*.parquet"):
-        if "max_projected" in file.name:
-            if "sc" in file.name:
-                levels_to_merge_dict["max_projection"]["sc"].append(file)
-            elif "organoid" in file.name:
-                levels_to_merge_dict["max_projection"]["organoid"].append(file)
-        elif "middle_slice" in file.name:
-            if "sc" in file.name:
-                levels_to_merge_dict["middle_slice"]["sc"].append(file)
-            elif "organoid" in file.name:
-                levels_to_merge_dict["middle_slice"]["organoid"].append(file)
+        print(file)
+        if "max_projected" in file.name and "sc" in file.name:
+            levels_to_merge_dict["max_projection"]["sc"].append(file)
+        elif "max_projected" in file.name and "organoid" in file.name:
+            levels_to_merge_dict["max_projection"]["organoid"].append(file)
+        elif "middle_slice" in file.name and "sc" in file.name:
+            levels_to_merge_dict["middle_slice"]["sc"].append(file)
+        elif "middle_slice" in file.name and "organoid" in file.name:
+            levels_to_merge_dict["middle_slice"]["organoid"].append(file)
+        elif "middle_n_slice" in file.name and "sc" in file.name:
+            levels_to_merge_dict["middle_n_slice"]["sc"].append(file)
+        elif "middle_n_slice" in file.name and "organoid" in file.name:
+            levels_to_merge_dict["middle_n_slice"]["organoid"].append(file)
         else:
             raise ValueError(f"File {file} does not match expected naming scheme.")
 
@@ -160,6 +160,10 @@ dict_of_dfs_to_process = {
         "sc": [],
         "organoid": [],
     },
+    "middle_n_slice": {
+        "sc": [],
+        "organoid": [],
+    },
 }
 for profile_type in levels_to_merge_dict.keys():
     for compartment in levels_to_merge_dict[profile_type].keys():
@@ -179,9 +183,6 @@ for profile_type in levels_to_merge_dict.keys():
             index=False,
         )
         dict_of_dfs_to_process[profile_type][compartment] = new_df_path
-
-
-# In[ ]:
 
 
 # In[8]:

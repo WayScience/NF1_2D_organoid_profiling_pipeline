@@ -10,7 +10,7 @@ PREPROCESS=FALSE
 ILLUMINATION_CORRECTION=FALSE
 SEGMENT=TRUE
 EXTRACT_FEATURES=TRUE
-IMAGE_BASED_PROFILING=FALSE
+IMAGE_BASED_PROFILING=TRUE
 ANALYSIS=FALSE
 
 ##################################
@@ -31,6 +31,7 @@ fi
 if [ "$PREPROCESS" = TRUE ] ; then
     echo "Running Preprocessing Module..."
     cd 1.max_projection || exit
+    # shellcheck disable=SC1091
     source check_and_max_proj.sh
     cd .. || exit
 else
@@ -43,6 +44,7 @@ fi
 if [ "$ILLUMINATION_CORRECTION" = TRUE ] ; then
     echo "Running Illumination Correction Module..."
     cd 2.illumination_correction || exit
+    # shellcheck disable=SC1091
     source run_ic.sh
     cd .. || exit
 else
@@ -55,6 +57,7 @@ fi
 if [ "$SEGMENT" = TRUE ] ; then
     echo "Running Cell Segmentation Module..."
     cd 3.cell_segmentation || exit
+    # shellcheck disable=SC1091
     source run_segmentation.sh
     cd .. || exit
 else
@@ -67,6 +70,7 @@ fi
 if [ "$EXTRACT_FEATURES" = TRUE ] ; then
     echo "Running Feature Extraction Module..."
     cd 3.feature_extraction || exit
+    # shellcheck disable=SC1091
     source run_local_featurization.sh
     cd .. || exit
 else
@@ -80,6 +84,7 @@ fi
 if [ "$IMAGE_BASED_PROFILING" = TRUE ] ; then
     echo "Running Image-based Profiling Module..."
     cd 4.preprocess_features || exit
+    # shellcheck disable=SC1091
     source run_preprocessing.sh
     cd .. || exit
 else
@@ -93,6 +98,7 @@ fi
 if [ "$ANALYSIS" = TRUE ] ; then
     echo "Running Analysis Module..."
     cd 5.analyze_data || exit
+    # shellcheck disable=SC1091
     source run_eda.sh
     cd .. || exit
 else

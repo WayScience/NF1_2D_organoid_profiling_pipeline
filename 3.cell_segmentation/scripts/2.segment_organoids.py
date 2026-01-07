@@ -100,7 +100,7 @@ def segment_with_diameter(
 # test the function with three cylinders each with a different diameter
 def test_segment_with_diameter():
     use_GPU = torch.cuda.is_available()
-    diameters = [100, 250, 400, 600, 800, 1000]
+    diameters = [100, 200, 250, 300, 400, 600, 800, 1000]
     z_depth = 1  # No z-depth for 2D images
     for diameter in diameters:
         img = np.zeros((1500, 1500), dtype=np.uint8)
@@ -176,7 +176,7 @@ mask_path = input_dir
 
 # ## Set up images, paths and functions
 
-# In[ ]:
+# In[4]:
 
 
 if overwrite or not labels_path.exists():

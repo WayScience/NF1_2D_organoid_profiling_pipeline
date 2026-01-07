@@ -7,7 +7,7 @@
 
 # ## import libraries
 
-# In[1]:
+# In[ ]:
 
 
 import os
@@ -34,7 +34,7 @@ image_base_dir = bandicoot_check(
 # If a notebook run the hardcoded paths.
 # However, if this is run as a script, the paths are set by the parsed arguments.
 
-# In[2]:
+# In[ ]:
 
 
 if not in_notebook:
@@ -52,8 +52,8 @@ if not in_notebook:
     )
 else:
     print("Running in a notebook")
-    patient = "NF0040_T1"
-    well_fov = "E7-1"
+    patient = "NF0014_T1"
+    well_fov = "C3-1"
     clip_limit = 0.01
     twoD_method = "middle_n"
     overwrite = True
@@ -83,7 +83,7 @@ mask_path = input_dir
 
 # ## Set up images, paths and functions
 
-# In[3]:
+# In[ ]:
 
 
 if overwrite or not labels_path.exists():
@@ -95,6 +95,7 @@ if overwrite or not labels_path.exists():
         if "555" in f:
             cell = io.imread(f)
         elif "nuclei_mask" in f:
+            nuclei_mask_path = f
             nuclei_mask = io.imread(f)
     cell = np.array(cell)
     cell = skimage.exposure.equalize_adapthist(cell, clip_limit=clip_limit)
@@ -104,25 +105,64 @@ if overwrite or not labels_path.exists():
         plt.axis("off")
         plt.show()
         labels = np.zeros_like(cell, dtype=np.int32)
+
     # get the seeds from the nuclei mask
-    seeds = skimage.measure.label(nuclei_mask, connectivity=2)
+    seeds = skimage.measure.label(nuclei_mask, connectivity=1)
+    cell = skimage.filters.sobel(cell, mask=cell > 0)
     labels = segmentation.watershed(cell, markers=seeds)
     # make sure the background is labeled as 0
     labels[labels == -1] = 0
     # set the largest label to 0 (background)
     largest_label = np.bincount(labels.ravel()).argmax()
     labels[labels == largest_label] = 0
-    # # save the labels
+
+    # remove nuclei masks that do not have any cell pixels
+    unique_nuclei = np.unique(nuclei_mask)
+    for nucleus_label in unique_nuclei:
+        if nucleus_label == 0:
+            continue
+        # get the mask for the nucleus
+        nucleus_mask = nuclei_mask == nucleus_label
+        # check if there are any cell pixels in this nucleus
+        overlapping_cell_labels = np.unique(labels[nucleus_mask])
+        overlapping_cell_labels = overlapping_cell_labels[
+            overlapping_cell_labels != 0
+        ]  # exclude background
+        if len(overlapping_cell_labels) == 0:
+            # remove this nucleus by setting its label to 0
+            nuclei_mask[nucleus_mask] = 0
+
+    # remove the cell labels that do not have any nuclei pixels
+    unique_cells = np.unique(labels)
+    for cell_label in unique_cells:
+        if cell_label == 0:
+            continue
+        # get the mask for the cell
+        cell_mask = labels == cell_label
+        # check if there are any nuclei pixels in this cell
+        overlapping_nuclei_labels = np.unique(nuclei_mask[cell_mask])
+        overlapping_nuclei_labels = overlapping_nuclei_labels[
+            overlapping_nuclei_labels != 0
+        ]  # exclude background
+        if len(overlapping_nuclei_labels) == 0:
+            # remove this cell by setting its label to 0
+            labels[cell_mask] = 0
+
+    # save the labels
+    tifffile.imwrite(nuclei_mask_path, nuclei_mask.astype(np.uint16))
     tifffile.imwrite(labels_path, labels.astype(np.uint16))
 
 
 # ## Watershed the cells from the nuclei
 
-# In[4]:
+# In[ ]:
 
 
 if in_notebook:
-    plot = plt.figure(figsize=(10, 5))
+    # brighten up the cell image for visualization
+    cell = skimage.exposure.equalize_adapthist(cell, clip_limit=0.01)
+
+    plot = plt.figure(figsize=(10, 8))
     plt.figure(figsize=(10, 10))
     plt.subplot(131)
     plt.imshow(labels, cmap="nipy_spectral")
@@ -134,6 +174,6 @@ if in_notebook:
     plt.axis("off")
 
     plt.subplot(133)
-    plt.imshow(cell, cmap="gray")
+    plt.imshow(cell, cmap="gray", vmin=0, vmax=1)
     plt.title("raw")
     plt.axis("off")

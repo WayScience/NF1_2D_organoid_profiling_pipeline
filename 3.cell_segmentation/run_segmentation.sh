@@ -37,6 +37,7 @@ while IFS= read -r line; do
     for twoD_method in "${twoD_methods[@]}"; do
     # run Python script for running preprocessing of morphology profiles
         if [ $overwrite = "TRUE" ] ; then
+            conda deactivate ; conda activate GFF_segmentation_nuclei
             python -u scripts/0.segment_nuclei.py \
                 --patient "$patient" \
                 --well_fov "$well_fov" \
@@ -50,6 +51,7 @@ while IFS= read -r line; do
                 --clip_limit 0.01 \
                 --twoD_method "$twoD_method" \
                 --overwrite
+            conda deactivate ; conda activate GFF_segmentation
             python scripts/2.segment_organoids.py \
                 --patient "$patient" \
                 --well_fov "$well_fov" \
@@ -68,7 +70,7 @@ while IFS= read -r line; do
                 --well_fov "$well_fov" \
                 --clip_limit 0.01 \
                 --twoD_method "$twoD_method"
-
+            conda deactivate ; conda activate GFF_segmentation
             python scripts/2.segment_organoids.py \
                 --patient "$patient" \
                 --well_fov "$well_fov" \

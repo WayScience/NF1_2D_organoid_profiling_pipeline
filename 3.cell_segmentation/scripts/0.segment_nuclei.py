@@ -54,8 +54,8 @@ if not in_notebook:
     )
 else:
     print("Running in a notebook")
-    patient = "NF0040_T1"
-    well_fov = "E7-1"
+    patient = "NF0014_T1"
+    well_fov = "C3-1"
     clip_limit = 0.01
     twoD_method = "middle_n"
     overwrite = True
@@ -78,15 +78,13 @@ else:
 labels_path = input_dir / f"{well_fov}_nuclei_masks.tiff"
 
 
-mask_path = input_dir
-
-
 # ## Set up images, paths and functions
 
 # In[3]:
 
 
 if overwrite or not labels_path.exists():
+    print(f"Segmenting nuclei for {well_fov} using Cellpose")
     image_extensions = {".tif", ".tiff"}
     files = sorted(input_dir.glob("*"))
     files = [str(x) for x in files if x.suffix in image_extensions]
