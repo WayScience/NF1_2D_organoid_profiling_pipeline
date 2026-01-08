@@ -67,20 +67,28 @@ missing_files_list = []
 for index, row in well_fov_df.iterrows():
     patient = row["patient"]
     well_fov = row["well_fov"]
-    middle_slice_dir_to_check = pathlib.Path(
-        f"{root_dir}/data/{patient}/cellprofiler_middle_slice_output/{well_fov}/"
-    ).resolve()
     max_z_slice_dir_to_check = pathlib.Path(
-        f"{root_dir}/data/{patient}/cellprofiler_zmax_proj_output/{well_fov}/"
+        f"{root_dir}/data/{patient}/2D_analysis/2a.cellprofiler_zmax_proj_output/{well_fov}/"
     ).resolve()
+    middle_slice_dir_to_check = pathlib.Path(
+        f"{root_dir}/data/{patient}/2D_analysis/2b.cellprofiler_middle_slice_output/{well_fov}/"
+    ).resolve()
+    middle_n_slice_dir_to_check = pathlib.Path(
+        f"{root_dir}/data/{patient}/2D_analysis/2c.cellprofiler_middle_n_slice_max_proj_output/{well_fov}/"
+    ).resolve()
+    if not max_z_slice_dir_to_check.is_dir():
+        missing_files += 1
+        missing_files_list.append(str(max_z_slice_dir_to_check))
+    else:
+        present_files += 1
     if not middle_slice_dir_to_check.is_dir():
         missing_files += 1
         missing_files_list.append(str(middle_slice_dir_to_check))
     else:
         present_files += 1
-    if not max_z_slice_dir_to_check.is_dir():
+    if not middle_n_slice_dir_to_check.is_dir():
         missing_files += 1
-        missing_files_list.append(str(max_z_slice_dir_to_check))
+        missing_files_list.append(str(middle_n_slice_dir_to_check))
     else:
         present_files += 1
 
@@ -89,7 +97,7 @@ for index, row in well_fov_df.iterrows():
 
 
 reruns_df = pd.DataFrame(missing_files_list, columns=["dir_path"])
-reruns_df["patient"] = reruns_df["dir_path"].apply(lambda x: str(x).split("/")[-3])
+reruns_df["patient"] = reruns_df["dir_path"].apply(lambda x: str(x).split("/")[-4])
 reruns_df["well_fov"] = reruns_df["dir_path"].apply(lambda x: str(x).split("/")[-1])
 reruns_df.drop(columns=["dir_path"], inplace=True)
 reruns_df.drop_duplicates(inplace=True)
@@ -102,7 +110,7 @@ reruns_df.to_csv(
 # In[6]:
 
 
-print(f"Total directories checked: {len(well_fov_df) * 2}")
+print(f"Total directories checked: {len(well_fov_df) * 3}")
 print(f"Present directories: {present_files}")
 print(f"Missing directories: {missing_files}")
 print("Missing directories list:")

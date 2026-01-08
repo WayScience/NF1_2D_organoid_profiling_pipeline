@@ -47,8 +47,8 @@ if not in_notebook:
     )
 else:
     print("Running in a notebook")
-    well_fov = "C2-1"
-    patient = "NF0014_T1"
+    well_fov = "B3-3"
+    patient = "NF0040_T1"
 
 
 max_projected_input = pathlib.Path(
@@ -115,7 +115,7 @@ if in_notebook:
     pprint.pprint(plate_info_dictionary, indent=4)
 
 
-# In[ ]:
+# In[6]:
 
 
 # check if there is a sqlite db already present, if so remove the run from the dictionary
