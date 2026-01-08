@@ -8,6 +8,7 @@
 #SBATCH --output="2D_featurization-%j.out"
 
 # initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
+module load miniforge
 conda init bash
 # activate the preprocessing environment
 conda activate GFF_cellprofiler
