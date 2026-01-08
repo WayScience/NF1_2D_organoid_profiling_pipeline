@@ -3,7 +3,7 @@
 #SBATCH --ntasks=6
 #SBATCH --account=amc-general
 #SBATCH --partition=amilan
-#SBATCH --qos=long
+#SBATCH --qos=normal
 #SBATCH --time=15:00
 #SBATCH --output="2D_featurization-%j.out"
 
