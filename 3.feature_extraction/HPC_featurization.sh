@@ -3,8 +3,8 @@
 #SBATCH --ntasks=6
 #SBATCH --account=amc-general
 #SBATCH --partition=amilan
-#SBATCH --qos=normal
-#SBATCH --time=15:00
+#SBATCH --qos=long
+#SBATCH --time=7-00:00:00
 #SBATCH --output="2D_featurization-%j.out"
 
 # initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
