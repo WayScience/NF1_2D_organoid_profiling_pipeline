@@ -7,9 +7,7 @@
 import os
 import pathlib
 
-import tifffile
 import tqdm
-from arg_parsing_utils import check_for_missing_args, parse_args
 from notebook_init_utils import bandicoot_check, init_notebook
 
 root_dir, in_notebook = init_notebook()
@@ -66,6 +64,9 @@ print(f"Missing illumination corrected images: {missing_count}")
 
 missing_list = [str(x.parent) for x in missing_list]
 missing_list = list(set(missing_list))
-print("Missing illumination corrected image directories:")
-for missing in missing_list:
-    print(missing)
+if len(missing_list) > 50:
+    print(f"Missing {len(missing_list)} directories, not printing all.")
+else:
+    print("Missing illumination corrected image directories:")
+    for missing in missing_list:
+        print(missing)

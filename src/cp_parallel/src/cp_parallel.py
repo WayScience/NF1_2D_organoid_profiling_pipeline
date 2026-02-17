@@ -52,8 +52,7 @@ def results_to_log(
 
 
 def run_cellprofiler_parallel(
-    plate_info_dictionary: dict,
-    run_name: str,
+    plate_info_dictionary: dict, run_name: str, num_processes: int
 ) -> None:
     """
     This function utilizes multi-processing to run CellProfiler pipelines in parallel.
@@ -61,6 +60,7 @@ def run_cellprofiler_parallel(
     Args:
         plate_info_dictionary (dict): dictionary with all paths for CellProfiler to run a pipeline
         run_name (str): a given name for the type of CellProfiler run being done on the plates (example: whole image features)
+        num_processes (int): the number of processes to run in parallel, should not exceed the number of plates or the maximum number of workers for the machine
 
     Raises:
         FileNotFoundError: if paths to pipeline and images do not exist
@@ -107,9 +107,6 @@ def run_cellprofiler_parallel(
         if "plugins_directory" in info:
             command.extend(["--plugins-directory", info["plugins_directory"]])
         commands.append(command)
-
-    # set the number of CPUs/workers as the number of commands
-    num_processes = len(commands)
 
     # make sure that the number of workers does not exceed the maximum number of workers for the machine
     if num_processes > multiprocessing.cpu_count():

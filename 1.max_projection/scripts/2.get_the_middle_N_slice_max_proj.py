@@ -28,7 +28,7 @@ if not in_notebook:
         patient=patient,
     )
 else:
-    patient = "NF0014_T1"
+    patient = "NF0018_T6"
 
 
 # In[3]:

@@ -17,7 +17,7 @@ else
     echo "Error: File $patient_array_file_path does not exist."
     exit 1
 fi
-
+echo "Patient IDs read from file: ${patient_array[*]}"
 # initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
 conda init bash
 # activate the preprocessing environment

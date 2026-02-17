@@ -68,13 +68,13 @@ for index, row in well_fov_df.iterrows():
     patient = row["patient"]
     well_fov = row["well_fov"]
     max_z_slice_dir_to_check = pathlib.Path(
-        f"{root_dir}/data/{patient}/2D_analysis/2a.cellprofiler_zmax_proj_output/{well_fov}/"
+        f"{image_base_dir}/data/{patient}/2D_analysis/2a.cellprofiler_zmax_proj_output/{well_fov}/"
     ).resolve()
     middle_slice_dir_to_check = pathlib.Path(
-        f"{root_dir}/data/{patient}/2D_analysis/2b.cellprofiler_middle_slice_output/{well_fov}/"
+        f"{image_base_dir}/data/{patient}/2D_analysis/2b.cellprofiler_middle_slice_output/{well_fov}/"
     ).resolve()
     middle_n_slice_dir_to_check = pathlib.Path(
-        f"{root_dir}/data/{patient}/2D_analysis/2c.cellprofiler_middle_n_slice_max_proj_output/{well_fov}/"
+        f"{image_base_dir}/data/{patient}/2D_analysis/2c.cellprofiler_middle_n_slice_max_proj_output/{well_fov}/"
     ).resolve()
     if not max_z_slice_dir_to_check.is_dir():
         missing_files += 1

@@ -7,7 +7,7 @@
 
 # ## import libraries
 
-# In[ ]:
+# In[1]:
 
 
 import os
@@ -34,7 +34,7 @@ image_base_dir = bandicoot_check(
 # If a notebook run the hardcoded paths.
 # However, if this is run as a script, the paths are set by the parsed arguments.
 
-# In[ ]:
+# In[2]:
 
 
 if not in_notebook:
@@ -53,9 +53,9 @@ if not in_notebook:
 else:
     print("Running in a notebook")
     patient = "NF0014_T1"
-    well_fov = "C3-1"
+    well_fov = "C4-1"
     clip_limit = 0.01
-    twoD_method = "middle_n"
+    twoD_method = "zmax"
     overwrite = True
 
 
@@ -78,12 +78,10 @@ else:
 
 labels_path = input_dir / f"{well_fov}_cell_masks.tiff"
 
-mask_path = input_dir
-
 
 # ## Set up images, paths and functions
 
-# In[ ]:
+# In[3]:
 
 
 if overwrite or not labels_path.exists():
@@ -99,19 +97,13 @@ if overwrite or not labels_path.exists():
             nuclei_mask = io.imread(f)
     cell = np.array(cell)
     cell = skimage.exposure.equalize_adapthist(cell, clip_limit=clip_limit)
-    nuclei_mask = np.array(nuclei_mask)
-    if in_notebook:
-        plt.imshow(cell, cmap="gray")
-        plt.axis("off")
-        plt.show()
-        labels = np.zeros_like(cell, dtype=np.int32)
+    # nuclei_mask = np.array(nuclei_mask)
 
     # get the seeds from the nuclei mask
-    seeds = skimage.measure.label(nuclei_mask, connectivity=1)
+    # seeds = skimage.measure.label(nuclei_mask, connectivity=1)
     cell = skimage.filters.sobel(cell, mask=cell > 0)
-    labels = segmentation.watershed(cell, markers=seeds)
+    labels = segmentation.watershed(cell, markers=nuclei_mask)
     # make sure the background is labeled as 0
-    labels[labels == -1] = 0
     # set the largest label to 0 (background)
     largest_label = np.bincount(labels.ravel()).argmax()
     labels[labels == largest_label] = 0
@@ -147,33 +139,21 @@ if overwrite or not labels_path.exists():
         if len(overlapping_nuclei_labels) == 0:
             # remove this cell by setting its label to 0
             labels[cell_mask] = 0
-
+    if in_notebook:
+        plt.figure(figsize=(15, 5))
+        plt.subplot(131)
+        plt.imshow(cell, cmap="inferno")
+        plt.axis("off")
+        plt.title("cell")
+        plt.subplot(132)
+        plt.imshow(labels, cmap="nipy_spectral")
+        plt.axis("off")
+        plt.title("cell masks")
+        plt.subplot(133)
+        plt.imshow(nuclei_mask, cmap="nipy_spectral")
+        plt.axis("off")
+        plt.title("nuclei masks")
+        plt.show()
     # save the labels
     tifffile.imwrite(nuclei_mask_path, nuclei_mask.astype(np.uint16))
     tifffile.imwrite(labels_path, labels.astype(np.uint16))
-
-
-# ## Watershed the cells from the nuclei
-
-# In[ ]:
-
-
-if in_notebook:
-    # brighten up the cell image for visualization
-    cell = skimage.exposure.equalize_adapthist(cell, clip_limit=0.01)
-
-    plot = plt.figure(figsize=(10, 8))
-    plt.figure(figsize=(10, 10))
-    plt.subplot(131)
-    plt.imshow(labels, cmap="nipy_spectral")
-    plt.title("mask")
-    plt.axis("off")
-    plt.subplot(132)
-    plt.imshow(nuclei_mask, cmap="nipy_spectral")
-    plt.title("nuclei mask")
-    plt.axis("off")
-
-    plt.subplot(133)
-    plt.imshow(cell, cmap="gray", vmin=0, vmax=1)
-    plt.title("raw")
-    plt.axis("off")

@@ -5,7 +5,7 @@
 
 # ## Import libraries
 
-# In[1]:
+# In[ ]:
 
 
 import os
@@ -18,7 +18,6 @@ from arg_parsing_utils import check_for_missing_args, parse_args
 from notebook_init_utils import bandicoot_check, init_notebook
 
 import cp_parallel
-from cp_parallel import run_cellprofiler_parallel
 
 root_dir, in_notebook = init_notebook()
 image_base_dir = bandicoot_check(

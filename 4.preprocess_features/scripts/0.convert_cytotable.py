@@ -11,6 +11,7 @@
 import logging
 import os
 import pathlib
+import shutil
 import uuid
 
 import duckdb
@@ -28,7 +29,8 @@ from parsl.executors import HighThroughputExecutor
 logging.getLogger().setLevel(logging.ERROR)
 root_dir, in_notebook = init_notebook()
 image_base_dir = bandicoot_check(
-    pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot/NF1_organoid_data")).resolve(),
+    root_dir,
 )
 
 
@@ -44,21 +46,23 @@ if not in_notebook:
     )
 else:
     print("Running in a notebook")
-    patient = "NF0040_T1"
+    patient = "SARCO361_T1"
 
 
 max_projected_input = pathlib.Path(
-    f"../../data/{patient}/2D_analysis/2a.cellprofiler_zmax_proj_output/"
+    f"{image_base_dir}/data/{patient}/2D_analysis/2a.cellprofiler_zmax_proj_output/"
 ).resolve(strict=True)
 middle_slice_input = pathlib.Path(
-    f"../../data/{patient}/2D_analysis/2b.cellprofiler_middle_slice_output/"
+    f"{image_base_dir}/data/{patient}/2D_analysis/2b.cellprofiler_middle_slice_output/"
 ).resolve(strict=True)
 middle_n_slice_input = pathlib.Path(
-    f"../../data/{patient}/2D_analysis/2c.cellprofiler_middle_n_slice_max_proj_output/"
+    f"{image_base_dir}/data/{patient}/2D_analysis/2c.cellprofiler_middle_n_slice_max_proj_output/"
 ).resolve(strict=True)
 
 # directory for processed data
-output_dir = pathlib.Path(f"../../data/{patient}/2D_analysis/3.converted/").resolve()
+output_dir = pathlib.Path(
+    f"{root_dir}/data/{patient}/2D_analysis/3.converted/"
+).resolve()
 output_dir.mkdir(parents=True, exist_ok=True)
 
 max_projected_sc_output = pathlib.Path(output_dir, "max_projected_sc.parquet").resolve()
@@ -135,6 +139,8 @@ for featurization_type in well_fov_dict.keys():
         sqlite_file = file_info["image_path"]
         total += 1
         # convert the sqlite file to a single cell parquet file
+        run_info_dir = pathlib.Path(f"cytotable_runinfo/{uuid.uuid4().hex}").resolve()
+
         try:
             df = convert(
                 sqlite_file,
@@ -145,17 +151,28 @@ for featurization_type in well_fov_dict.keys():
                 dest_path=f"{well_fov_dict[featurization_type][well_fov]['output_dir']}_sc.parquet",
                 parsl_config=Config(
                     executors=[HighThroughputExecutor()],
-                    run_dir=f"cytotable_runinfo/{uuid.uuid4().hex}",
+                    run_dir=str(run_info_dir),
                 ),
             )
             output_dict_of_dfs[featurization_type]["df_list"].append(
                 f"{well_fov_dict[featurization_type][well_fov]['output_dir']}_sc.parquet"
             )
+            # remove the temporary run info directory
+            if run_info_dir.exists():
+                shutil.rmtree(run_info_dir)
         except Exception as e:
             errors += 1
             if not "An existing file or directory was provided as dest_path" in str(e):
                 print(f"Error processing {sqlite_file}: {e}")
+            if run_info_dir.exists():
+                shutil.rmtree(run_info_dir)
             continue
+
+
+# remove any straggling run info directories
+cytotable_runinfo_dir = pathlib.Path("cytotable_runinfo")
+if cytotable_runinfo_dir.exists():
+    shutil.rmtree(cytotable_runinfo_dir)
 print(f"Total files processed: {total}")
 print(f"Total errors encountered: {errors}")
 
@@ -168,7 +185,7 @@ output_dict_of_dfs = {
         "df_list": [
             x
             for x in pathlib.Path(
-                f"../../data/{patient}/2D_analysis/3.converted/zmax_proj/"
+                f"{image_base_dir}/data/{patient}/2D_analysis/3.converted/zmax_proj/"
             ).rglob("*.parquet")
         ]
     },
@@ -176,7 +193,7 @@ output_dict_of_dfs = {
         "df_list": [
             x
             for x in pathlib.Path(
-                f"../../data/{patient}/2D_analysis/3.converted/middle_slice/"
+                f"{image_base_dir}/data/{patient}/2D_analysis/3.converted/middle_slice/"
             ).rglob("*.parquet")
         ]
     },
@@ -184,8 +201,8 @@ output_dict_of_dfs = {
         "df_list": [
             x
             for x in pathlib.Path(
-                f"../../data/{patient}/2D_analysis/3.converted/middle_n_slice_max_proj/"
-            ).rglob("*.parquet")
+                f"{image_base_dir}/data/{patient}/2D_analysis/3.converted/middle_n_slice_max_proj/"
+            ).glob("*.parquet")
         ]
     },
 }
@@ -331,12 +348,6 @@ for featurization_type in well_fov_dict.keys():
             errors += 1
             print(f"Error processing {sqlite_file}: {e}")
             continue
-
-
-# In[ ]:
-
-
-output_dict_of_dfs.keys()
 
 
 # In[ ]:

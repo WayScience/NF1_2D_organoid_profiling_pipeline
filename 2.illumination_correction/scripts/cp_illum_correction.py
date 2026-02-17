@@ -34,7 +34,7 @@ if not in_notebook:
         patient=patient,
     )
 else:
-    patient = "NF0018_T6"
+    patient = "NF0055_T1"
 
 
 # ## Set paths and variables
@@ -115,6 +115,8 @@ for well_fov_key in plate_info_dictionary:
     output_dir = plate_info_dictionary[well_fov_key]["path_to_output"]
     num_files = len(list(output_dir.glob("*.tiff")))
     if num_files < 4:
+        print(f"Found {num_files} files in {output_dir}")
+
         filtered_plate_info_dictionary[well_fov_key] = plate_info_dictionary[
             well_fov_key
         ]
@@ -139,6 +141,7 @@ print(f"""Now runnning illumination correction for
 
 # delete the output directories for CP rerun if they exist
 for key in filtered_plate_info_dictionary:
+    print(filtered_plate_info_dictionary[key]["path_to_images"].resolve(strict=True))
     output_dir = filtered_plate_info_dictionary[key]["path_to_output"]
     if output_dir.exists():
         print(f"Deleting existing output directory: {output_dir}")

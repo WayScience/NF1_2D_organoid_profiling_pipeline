@@ -181,7 +181,7 @@ drug_information_df = pd.read_csv(
 )
 
 
-# In[6]:
+# In[ ]:
 
 
 for plate, info in plate_info_dictionary.items():
@@ -194,11 +194,12 @@ for plate, info in plate_info_dictionary.items():
     platemap_df = pd.read_csv(
         pathlib.Path(f"{root_dir}/data/{patient}/platemap/platemap.csv")
     )
+    platemap_df.rename(columns={"unit": "Metadata_dose_unit"}, inplace=True)
     platemap_df.rename(columns={"well_position": "Metadata_Well"}, inplace=True)
     # Step 1: Annotation
     print("Performing annotation...")
     platemap_df = platemap_df.merge(
-        drug_information_df, how="left", left_on="treatment", right_on="Treatment"
+        drug_information_df, how="left", left_on="treatment", right_on="treatment"
     )
     annotate(
         profiles=profile_df,

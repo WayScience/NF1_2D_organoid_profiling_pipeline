@@ -3,10 +3,8 @@
 # initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
 conda init bash
 # activate the preprocessing environment
-conda activate GFF_segmentation
 jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
-overwrite="FALSE"
 twoD_methods=( "zmax" "middle" "middle_n" )
 input_file="loadfiles/segmentation_loadfile.txt"
 
@@ -36,47 +34,28 @@ while IFS= read -r line; do
 
     for twoD_method in "${twoD_methods[@]}"; do
     # run Python script for running preprocessing of morphology profiles
-        if [ $overwrite = "TRUE" ] ; then
-            conda deactivate ; conda activate GFF_segmentation_nuclei
-            python -u scripts/0.segment_nuclei.py \
-                --patient "$patient" \
-                --well_fov "$well_fov" \
-                --clip_limit 0.03 \
-                --twoD_method "$twoD_method" \
-                --overwrite
+        conda activate GFF_segmentation_2D
 
-            python scripts/1.segment_cells.py \
-                --patient "$patient" \
-                --well_fov "$well_fov" \
-                --clip_limit 0.01 \
-                --twoD_method "$twoD_method" \
-                --overwrite
-            conda deactivate ; conda activate GFF_segmentation
-            python scripts/2.segment_organoids.py \
-                --patient "$patient" \
-                --well_fov "$well_fov" \
-                --clip_limit 0.01 \
-                --twoD_method "$twoD_method" \
-                --overwrite
-        else
-            python -u scripts/0.segment_nuclei.py \
-                --patient "$patient" \
-                --well_fov "$well_fov" \
-                --clip_limit 0.03 \
-                --twoD_method "$twoD_method"
+        python scripts/0.segment_nuclei.py \
+            --patient "$patient" \
+            --well_fov "$well_fov" \
+            --clip_limit 0.03 \
+            --twoD_method "$twoD_method" \
+            --overwrite
 
-            python scripts/1.segment_cells.py \
-                --patient "$patient" \
-                --well_fov "$well_fov" \
-                --clip_limit 0.01 \
-                --twoD_method "$twoD_method"
-            conda deactivate ; conda activate GFF_segmentation
-            python scripts/2.segment_organoids.py \
-                --patient "$patient" \
-                --well_fov "$well_fov" \
-                --clip_limit 0.01 \
-                --twoD_method "$twoD_method"
-        fi
+        python scripts/1.segment_cells.py \
+            --patient "$patient" \
+            --well_fov "$well_fov" \
+            --clip_limit 0.01 \
+            --twoD_method "$twoD_method" \
+            --overwrite
+
+        python scripts/2.segment_organoids.py \
+            --patient "$patient" \
+            --well_fov "$well_fov" \
+            --clip_limit 0.01 \
+            --twoD_method "$twoD_method" \
+            --overwrite
     done
 done < "$input_file"
 

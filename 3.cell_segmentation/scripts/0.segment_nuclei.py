@@ -55,9 +55,9 @@ if not in_notebook:
 else:
     print("Running in a notebook")
     patient = "NF0014_T1"
-    well_fov = "C3-1"
-    clip_limit = 0.01
-    twoD_method = "middle_n"
+    well_fov = "C4-1"
+    clip_limit = 0.02
+    twoD_method = "zmax"
     overwrite = True
 
 if twoD_method == "zmax":
@@ -84,7 +84,6 @@ labels_path = input_dir / f"{well_fov}_nuclei_masks.tiff"
 
 
 if overwrite or not labels_path.exists():
-    print(f"Segmenting nuclei for {well_fov} using Cellpose")
     image_extensions = {".tif", ".tiff"}
     files = sorted(input_dir.glob("*"))
     files = [str(x) for x in files if x.suffix in image_extensions]
@@ -97,10 +96,9 @@ if overwrite or not labels_path.exists():
 
     use_GPU = torch.cuda.is_available()
     # Load the model
-    model_name = "nuclei"
-    model = models.CellposeModel(gpu=use_GPU, model_type=model_name)
+    model = models.CellposeModel(gpu=use_GPU)
 
-    labels, details, _ = model.eval(nuclei, diameter=75, channels=[0, 0])
+    labels, details, _ = model.eval(nuclei)
 
     # save the labels
     tifffile.imwrite(labels_path, labels.astype(np.uint16))
@@ -112,12 +110,13 @@ if overwrite or not labels_path.exists():
 if in_notebook:
     plot = plt.figure(figsize=(10, 5))
     plt.figure(figsize=(10, 10))
-    plt.subplot(131)
+    plt.subplot(121)
     plt.imshow(labels, cmap="gray")
     plt.title("mask")
     plt.axis("off")
 
-    plt.subplot(132)
+    plt.subplot(122)
     plt.imshow(nuclei, cmap="gray")
     plt.title("raw")
     plt.axis("off")
+    plt.show()
