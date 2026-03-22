@@ -1,9 +1,13 @@
+"""Utilities for decoupling and merging segmentation masks."""
+
 import numpy as np
 import pandas as pd
 import skimage
 
 
-def euclidian_2D_distance(coord_set_1: tuple, coord_set_2: tuple) -> float:
+def euclidian_2D_distance(
+    coord_set_1: tuple[float, float], coord_set_2: tuple[float, float]
+) -> float:
     """
     This function calculates the euclidian distance between two sets of coordinates (2D)
 
@@ -27,8 +31,8 @@ def euclidian_2D_distance(coord_set_1: tuple, coord_set_2: tuple) -> float:
 
 
 def check_coordinate_inside_box(
-    coord: tuple,
-    box: tuple,
+    coord: tuple[float, float],
+    box: tuple[float, float, float, float],
 ) -> bool:
     """
     This function checks if a coordinate is inside a box
@@ -69,7 +73,10 @@ def check_coordinate_inside_box(
         return False
 
 
-def get_larger_bbox(bbox1: tuple, bbox2: tuple) -> tuple:
+def get_larger_bbox(
+    bbox1: tuple[float, float, float, float],
+    bbox2: tuple[float, float, float, float],
+) -> tuple[float, float, float, float]:
     """
     This function returns the larger of two bounding boxes
 
@@ -103,7 +110,7 @@ def get_larger_bbox(bbox1: tuple, bbox2: tuple) -> tuple:
         return bbox2
 
 
-def extract_unique_masks(image_stack) -> pd.DataFrame:
+def extract_unique_masks(image_stack: np.ndarray) -> pd.DataFrame:
     """
     This function extracts unique masks from an image stack
 
@@ -161,7 +168,10 @@ def extract_unique_masks(image_stack) -> pd.DataFrame:
 
 
 def compare_masks_for_merged(
-    df: pd.DataFrame, index1: int, index2: int, distance_threshold: int = 10
+    df: pd.DataFrame,
+    index1: int,
+    index2: int,
+    distance_threshold: int = 10,
 ) -> pd.DataFrame:
     """
     This function compares masks for merging
@@ -297,7 +307,19 @@ def get_combinations_of_indices(
     return merged_df
 
 
-def merge_sets(list_of_sets: list) -> list:
+def merge_sets(list_of_sets: list[set[int]]) -> tuple[list[set[int]], int]:
+    """Merge overlapping sets in-place and count merges.
+
+    Parameters
+    ----------
+    list_of_sets : list[set[int]]
+        Sets of integer labels to merge.
+
+    Returns
+    -------
+    tuple[list[set[int]], int]
+        Updated list of sets and the number of merges performed.
+    """
     counter = 0
     for i, set1 in enumerate(list_of_sets):
         for j, set2 in enumerate(list_of_sets):
@@ -358,7 +380,9 @@ def merge_sets_df(merged_df: pd.DataFrame) -> pd.DataFrame:
     return merged_df
 
 
-def reassemble_each_mask(df, original_img_shape) -> np.ndarray:
+def reassemble_each_mask(
+    df: pd.DataFrame, original_img_shape: tuple[int, int, int]
+) -> np.ndarray:
     """
     This function reassembles the masks from the dataframe
 

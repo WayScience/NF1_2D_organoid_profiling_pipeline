@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "image-analysis-3d"
+version = "0.0.1"
+description = "Utility modules for the NF1 3D organoid profiling pipeline"
+requires-python = ">=3.9"
+authors = [{ name = "Michael J. Lippincott" }]
+license = { text = "BSD 3-Clause License" }
+dependencies = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "scikit-image",
+    "tifffile",
+    "cellpose",
+    "napari",
+    "networkx",
+    "torch>=2.0.0",
+    "cupy-cuda11x",
+    "cucim",
+    "medim",
+    "tqdm",
+    "jupyter",
+    "ipykernel",
+    "mahotas",
+    "matplotlib",
+    "tomli",
+    "moviepy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "pytest-xdist", "black", "ruff", "pre-commit", "rich"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["image_analysis_3D*"]

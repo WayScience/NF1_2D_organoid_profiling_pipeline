@@ -1,7 +1,12 @@
+"""Argument parsing helpers for pipeline scripts."""
+
+from __future__ import annotations
+
 import argparse
+from typing import Any
 
 
-def check_for_missing_args(**kwargs):
+def check_for_missing_args(**kwargs: Any) -> None:
     """
     Check if any required arguments are missing.
 
@@ -21,19 +26,22 @@ def check_for_missing_args(**kwargs):
         )
 
 
-def parse_args():
+def parse_args() -> dict[str, str | int | float | None]:
     """
     Parse command line arguments for segmentation tasks.
 
     Returns
     -------
     dict
-        A dictionary containing the parsed arguments.
-        Where:
-            'well_fov' is the well and field of view to process,
-            'patient' is the patient ID, 'window_size' is the window size for image processing,
-            'clip_limit' is the clip limit for contrast enhancement, and
-            'compartment' is the compartment to process.
+        A dictionary containing the parsed arguments with keys:
+
+        - 'well_fov': well and field of view to process (e.g., 'A01-1')
+        - 'patient': patient ID (e.g., 'NF0014')
+        - 'window_size': window size for image processing (e.g., 3)
+        - 'clip_limit': clip limit for contrast enhancement (e.g., 0.05)
+        - 'compartment': compartment to process (e.g., 'Nuclei')
+        - 'channel': channel to process (e.g., 'DAPI')
+
     Raises
     ------
     ValueError
@@ -98,18 +106,19 @@ def parse_args():
         "--output_features_subparent_name",
         type=str,
         default=None,
-        help="Name of the subparent directory for output features, e.g. 'sammed3D_features'",
+        help="Name of the subparent directory for output features, e.g. 'feature_data'",
+    )
+    argparser.add_argument(
+        "--image_based_profiles_subparent_name",
+        type=str,
+        default=None,
+        help="Name of the subparent directory for image-based profiles, e.g. 'image_based_profiles'",
     )
     argparser.add_argument(
         "--twoD_method",
         type=str,
         default=None,
-        help="Method for 2D segmentation, e.g. 'max_proj' or 'middle_slice'",
-    )
-    argparser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Whether to overwrite existing files",
+        help="2D z-projection method to use, e.g. 'zmax'",
     )
 
     args = argparser.parse_args()
@@ -123,8 +132,8 @@ def parse_args():
     input_subparent_name = args.input_subparent_name
     mask_subparent_name = args.mask_subparent_name
     output_features_subparent_name = args.output_features_subparent_name
+    image_based_profiles_subparent_name = args.image_based_profiles_subparent_name
     twoD_method = args.twoD_method
-    overwrite = args.overwrite
 
     return {
         "well_fov": well_fov,
@@ -137,6 +146,6 @@ def parse_args():
         "input_subparent_name": input_subparent_name,
         "mask_subparent_name": mask_subparent_name,
         "output_features_subparent_name": output_features_subparent_name,
+        "image_based_profiles_subparent_name": image_based_profiles_subparent_name,
         "twoD_method": twoD_method,
-        "overwrite": overwrite,
     }

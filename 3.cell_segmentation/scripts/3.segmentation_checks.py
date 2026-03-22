@@ -31,19 +31,26 @@ patient_ids
 
 
 illumcorr_paths = [
-    "1a.zmax_proj_illum_correction",
-    "1b.middle_slice_illum_correction",
-    "1c.middle_n_slice_max_proj_illum_correction",
+    "0a.zmax_proj",
+    "0b.middle_slice",
+    "0c.middle_n_slice_max_proj",
 ]
-masks = ["organoid_masks", "nuclei_masks", "cell_masks"]
+masks = ["organoid_mask", "nuclei_mask", "cell_mask"]
 
 
-# In[4]:
+# In[29]:
 
 
 expected_count = 0
 missing_count = 0
-missing_list = []
+missing_dict = {
+    "patient_id": [],
+    "twoD_method": [],
+    "well_fov": [],
+    "mask": [],
+    "missing_mask_path": [],
+}
+
 for patient in tqdm.tqdm(patient_ids, desc="Patients"):
     for illum_corr_sub_path in illumcorr_paths:
         illum_corr_path = pathlib.Path(
@@ -55,13 +62,24 @@ for patient in tqdm.tqdm(patient_ids, desc="Patients"):
                 mask_path = pathlib.Path(
                     f"{image_base_dir}/data/{patient}/2D_analysis/{illum_corr_sub_path}/{well_fov}/{well_fov}_{mask}.tiff"
                 ).resolve()
+                if "0a" in str(illum_corr_path.name):
+                    twoD_method = "zmax"
+                elif "0b" in str(illum_corr_path.name):
+                    twoD_method = "middle"
+                elif "0c" in str(illum_corr_path.name):
+                    twoD_method = "middle_n"
                 expected_count += 1
                 if not mask_path.exists():
                     missing_list.append(mask_path)
                     missing_count += 1
+                    missing_dict["patient_id"].append(patient)
+                    missing_dict["twoD_method"].append(twoD_method)
+                    missing_dict["well_fov"].append(well_fov)
+                    missing_dict["mask"].append(mask)
+                    missing_dict["missing_mask_path"].append(mask_path)
 
 
-# In[5]:
+# In[30]:
 
 
 print(f"Total number of expected masks: {expected_count:,}")
@@ -69,27 +87,21 @@ print(f"Total number of masks found: {(expected_count - missing_count):,}")
 print(f"Total number of missing masks: {missing_count:,}")
 
 
-# In[6]:
+# In[32]:
 
 
-missing_list = [str(x.parent) for x in missing_list]
-missing_list = list(set(missing_list))
-df = pd.DataFrame(missing_list, columns=["Missing Masks"])
-
-
-# In[7]:
-
-
-df["patient"] = df["Missing Masks"].apply(lambda x: x.split("/")[-4])
-df["well_fov"] = df["Missing Masks"].apply(lambda x: x.split("/")[-1])
-df.drop(columns=["Missing Masks"], inplace=True)
-df.drop_duplicates(inplace=True)
-df.sort_values(by=["patient", "well_fov"], inplace=True)
+df = pd.DataFrame(missing_dict)
+df.sort_values(by=["patient_id", "well_fov", "twoD_method"], inplace=True)
+df = (
+    df.groupby(["patient_id", "well_fov", "twoD_method"])
+    .size()
+    .reset_index(name="missing_mask_count")
+)
 df.reset_index(drop=True, inplace=True)
 df.head()
 
 
-# In[8]:
+# In[33]:
 
 
 # write to the loadfile
@@ -97,10 +109,13 @@ loadfile_path = pathlib.Path("../loadfiles/segmentation_loadfile.txt").resolve()
 loadfile_path.parent.mkdir(parents=True, exist_ok=True)
 with open(loadfile_path, "w") as f:
     for idx, row in df.iterrows():
-        f.write(f"{row['patient']}\t{row['well_fov']}\n")
+        f.write(f"{row['patient_id']}\t{row['well_fov']}\t{row['twoD_method']}\n")
 
 
-# In[9]:
+# In[34]:
 
 
-df.groupby("patient").count()
+df.groupby("patient_id").count()
+
+
+# In[ ]:

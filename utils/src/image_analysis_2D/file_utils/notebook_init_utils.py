@@ -1,17 +1,12 @@
+"""Notebook initialization helpers and Bandicoot path utilities."""
+
 import os
 import pathlib
 from typing import Tuple
 
-"""
-This utils module contains functions to initialize the notebook environment
-and check for the existence of an external mount point for Bandicoot.
-"""
-
 
 def init_notebook() -> Tuple[pathlib.Path, bool]:
     """
-    Description
-    -----------
     Initializes the notebook environment by determining the root directory of the Git repository
     and checking if the code is running in a Jupyter notebook.
 

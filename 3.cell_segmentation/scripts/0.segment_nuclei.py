@@ -20,9 +20,16 @@ import numpy as np
 import skimage
 import tifffile
 import torch
-from arg_parsing_utils import check_for_missing_args, parse_args
 from cellpose import models
-from notebook_init_utils import bandicoot_check, init_notebook
+from image_analysis_2D.file_utils.arg_parsing_utils import (
+    check_for_missing_args,
+    parse_args,
+)
+from image_analysis_2D.file_utils.notebook_init_utils import (
+    bandicoot_check,
+    init_notebook,
+)
+from image_analysis_2D.file_utils.profiling_utils import start_profiling, stop_profiling
 from skimage import io
 
 root_dir, in_notebook = init_notebook()
@@ -31,12 +38,18 @@ image_base_dir = bandicoot_check(
 )
 
 
+# In[2]:
+
+
+start_time, start_mem = start_profiling()
+
+
 # ## parse args and set paths
 
 # If as a notebook, then it will run the hardcoded paths.
 # However, if this is run as a script, the paths are set by the parsed arguments.
 
-# In[2]:
+# In[3]:
 
 
 if not in_notebook:
@@ -55,32 +68,32 @@ if not in_notebook:
 else:
     print("Running in a notebook")
     patient = "NF0014_T1"
-    well_fov = "C4-1"
+    well_fov = "C4-2"
     clip_limit = 0.02
     twoD_method = "zmax"
     overwrite = True
 
 if twoD_method == "zmax":
     input_dir = pathlib.Path(
-        f"{image_base_dir}/data/{patient}/2D_analysis/1a.zmax_proj_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/0a.zmax_proj/{well_fov}"
     ).resolve(strict=True)
 elif twoD_method == "middle":
     input_dir = pathlib.Path(
-        f"{image_base_dir}/data/{patient}/2D_analysis/1b.middle_slice_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/0b.middle_slice/{well_fov}"
     ).resolve(strict=True)
 elif twoD_method == "middle_n":
     input_dir = pathlib.Path(
-        f"{image_base_dir}/data/{patient}/2D_analysis/1c.middle_n_slice_max_proj_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/0c.middle_n_slice_max_proj/{well_fov}"
     ).resolve(strict=True)
 else:
     raise ValueError(f"Unknown twoD_method: {twoD_method}")
 
-labels_path = input_dir / f"{well_fov}_nuclei_masks.tiff"
+labels_path = input_dir / f"{well_fov}_nuclei_mask.tiff"
 
 
 # ## Set up images, paths and functions
 
-# In[3]:
+# In[4]:
 
 
 if overwrite or not labels_path.exists():
@@ -104,19 +117,37 @@ if overwrite or not labels_path.exists():
     tifffile.imwrite(labels_path, labels.astype(np.uint16))
 
 
-# In[4]:
+# In[5]:
 
 
 if in_notebook:
     plot = plt.figure(figsize=(10, 5))
     plt.figure(figsize=(10, 10))
     plt.subplot(121)
-    plt.imshow(labels, cmap="gray")
+    plt.imshow(labels, cmap="nipy_spectral")
     plt.title("mask")
     plt.axis("off")
 
     plt.subplot(122)
-    plt.imshow(nuclei, cmap="gray")
+    plt.imshow(nuclei, cmap="viridis")
     plt.title("raw")
     plt.axis("off")
     plt.show()
+
+
+# In[6]:
+
+
+stop_profiling(
+    start_time=start_time,
+    start_mem=start_mem,
+    feature_type="Segmentation",
+    well_fov=well_fov,
+    patient_id=patient,
+    channel="NoChannel",
+    compartment="nuclei",
+    CPU_GPU="GPU",
+    output_file_dir=pathlib.Path(
+        f"{input_dir.parent}/run_stats/{well_fov}_nuclei_segmentation.parquet"
+    ),
+)

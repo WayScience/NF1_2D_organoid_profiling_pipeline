@@ -40,15 +40,15 @@ else:
     validated_masks_list = []
 
 
-# In[4]:
+# In[ ]:
 
 
 illumcorr_paths = [
-    "1a.zmax_proj_illum_correction",
-    "1b.middle_slice_illum_correction",
-    "1c.middle_n_slice_max_proj_illum_correction",
+    "0a.zmax_proj",
+    "0b.middle_slice",
+    "0c.middle_n_slice_max_proj",
 ]
-masks = ["organoid_masks", "nuclei_masks", "cell_masks"]
+masks = ["organoid_mask", "nuclei_mask", "cell_mask"]
 
 
 # In[ ]:
@@ -57,6 +57,7 @@ masks = ["organoid_masks", "nuclei_masks", "cell_masks"]
 expected_count = 0
 present_count = 0
 empty_count = 0
+empty_masks = []
 for patient in tqdm.tqdm(patient_ids, desc="Patients", leave=True, unit="patient"):
     for illum_corr_sub_path in illumcorr_paths:
         illum_corr_path = pathlib.Path(
@@ -80,23 +81,28 @@ for patient in tqdm.tqdm(patient_ids, desc="Patients", leave=True, unit="patient
                         validated_masks_list.append(str(mask_path))
                     else:
                         empty_count += 1
+                        empty_masks.append(str(mask_path))
                 else:
                     present_count += 1
 print(
     f"Validated {len(validated_masks_list)} masks out of {expected_count} expected masks, with {empty_count} empty masks."
 )
+print(f"{present_count / expected_count:.2%} of expected masks were validated.")
 
 
-# In[ ]:
+# In[5]:
 
 
 df = pd.DataFrame({"validated_masks": validated_masks_list})
 df = df.astype(str)
 df.to_parquet(validated_mask_images_path, index=False)
+print(f"Total validated masks: {len(validated_masks_list)}")
 
 
-# In[ ]:
+# In[8]:
 
 
-print(df.shape)
-df.head()
+if len(empty_masks) > 0:
+    print(f"There are {len(empty_masks)} empty masks found.")
+else:
+    print("No empty masks found.")

@@ -5,10 +5,11 @@ conda init bash
 # activate the preprocessing environment
 jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
-twoD_methods=( "zmax" "middle" "middle_n" )
+
 input_file="loadfiles/segmentation_loadfile.txt"
 
-mkdir -p "logs"
+conda activate GFF_segmentation_2D
+
 patient_well_fov_counter=0
 # get the number of lines in the input file
 total_lines=$(wc -l < "$input_file")
@@ -21,44 +22,41 @@ while IFS= read -r line; do
 
     patient="${parts[0]}"
     well_fov="${parts[1]}"
+    twoD_method="${parts[2]}"
 
-    echo "  [$patient_well_fov_counter/$total_lines] Processing $patient - $well_fov"
+    echo "[$patient_well_fov_counter/$total_lines] $patient - $well_fov - $twoD_method"
 
     # create the log file
-    log_file="logs/segment_organoids_${patient}_${well_fov}.log"
+    log_file="./logs/segment_organoids_${patient}_${well_fov}_${twoD_method}.log"
     if [ -f "$log_file" ]; then
         rm "$log_file"
     fi
     mkdir -p "$(dirname "$log_file")"
     touch "$log_file"
 
-    for twoD_method in "${twoD_methods[@]}"; do
-    # run Python script for running preprocessing of morphology profiles
-        conda activate GFF_segmentation_2D
-
+    {
         python scripts/0.segment_nuclei.py \
             --patient "$patient" \
             --well_fov "$well_fov" \
-            --clip_limit 0.03 \
-            --twoD_method "$twoD_method" \
-            --overwrite
+            --clip_limit 0.02 \
+            --twoD_method "$twoD_method"
 
         python scripts/1.segment_cells.py \
             --patient "$patient" \
             --well_fov "$well_fov" \
-            --clip_limit 0.01 \
-            --twoD_method "$twoD_method" \
-            --overwrite
+            --clip_limit 0.04 \
+            --twoD_method "$twoD_method"
 
         python scripts/2.segment_organoids.py \
             --patient "$patient" \
             --well_fov "$well_fov" \
-            --clip_limit 0.01 \
-            --twoD_method "$twoD_method" \
-            --overwrite
-    done
-done < "$input_file"
+            --clip_limit 0.04 \
+            --twoD_method "$twoD_method"
 
+    } &> "$log_file"
+
+# done < "$input_file"
+done < <(tac "$input_file")
 
 
 conda deactivate

@@ -2,35 +2,42 @@
 # coding: utf-8
 
 # This notebook focuses on trying to find a way to segment cells within organoids properly.
-# The end goals is to segment cell and extract morphology features from cellprofiler.
-# These masks must be imported into cellprofiler to extract features.
+# The end goal is to segment cells and extract morphology features from CellProfiler.
+# These masks must be imported into CellProfiler to extract features.
+
+# ## import libraries
 
 # In[1]:
 
 
 import os
 import pathlib
-import warnings
 
-import imageio.v3 as iio
-import matplotlib.patches as patches
+import cucim
+import cupy
+import cupyx
+import cupyx.scipy.ndimage
 import matplotlib.pyplot as plt
 
 # Import dependencies
 import numpy as np
 import scipy
-import scipy as sp
 import skimage
 import tifffile
-import torch
-from arg_parsing_utils import check_for_missing_args, parse_args
-from cellpose import models
-from notebook_init_utils import bandicoot_check, init_notebook
-from skimage import io
-
-# from cellSAM import cellsam_pipeline, get_model
-# from cellSAM.utils import format_image_shape, normalize_image
-
+from image_analysis_2D.file_utils.arg_parsing_utils import (
+    check_for_missing_args,
+    parse_args,
+)
+from image_analysis_2D.file_utils.notebook_init_utils import (
+    bandicoot_check,
+    init_notebook,
+)
+from image_analysis_2D.file_utils.profiling_utils import start_profiling, stop_profiling
+from image_analysis_2D.segmentation_utils.segmentation_processing import (
+    fill_holes_in_mask,
+    remove_small_objects_preserve_labels,
+)
+from skimage import io, segmentation
 
 root_dir, in_notebook = init_notebook()
 image_base_dir = bandicoot_check(
@@ -41,13 +48,23 @@ image_base_dir = bandicoot_check(
 # In[2]:
 
 
+start_time, start_mem = start_profiling()
+
+
+# ## parse args and set paths
+
+# If a notebook run the hardcoded paths.
+# However, if this is run as a script, the paths are set by the parsed arguments.
+
+# In[3]:
+
+
 if not in_notebook:
     args_dict = parse_args()
     patient = args_dict["patient"]
     well_fov = args_dict["well_fov"]
     clip_limit = args_dict["clip_limit"]
     twoD_method = args_dict["twoD_method"]
-    overwrite = args_dict.get("overwrite", False)
     check_for_missing_args(
         patient=patient,
         well_fov=well_fov,
@@ -56,96 +73,107 @@ if not in_notebook:
     )
 else:
     print("Running in a notebook")
-    patient = "NF0014_T2"
-    well_fov = "C4-6"
-    clip_limit = 0.03
+    patient = "NF0014_T1"
+    well_fov = "C4-2"
+    clip_limit = 0.04
     twoD_method = "zmax"
-    overwrite = True
 
-if twoD_method == "middle":
+
+if twoD_method == "zmax":
     input_dir = pathlib.Path(
-        f"{image_base_dir}/data/{patient}/2D_analysis/1b.middle_slice_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/0a.zmax_proj/{well_fov}"
     ).resolve(strict=True)
-
-elif twoD_method == "zmax":
+elif twoD_method == "middle":
     input_dir = pathlib.Path(
-        f"{image_base_dir}/data/{patient}/2D_analysis/1a.zmax_proj_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/0b.middle_slice/{well_fov}"
     ).resolve(strict=True)
 elif twoD_method == "middle_n":
     input_dir = pathlib.Path(
-        f"{image_base_dir}/data/{patient}/2D_analysis/1c.middle_n_slice_max_proj_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/0c.middle_n_slice_max_proj/{well_fov}"
     ).resolve(strict=True)
 else:
     raise ValueError(f"Unknown twoD_method: {twoD_method}")
 
-labels_path = input_dir / f"{well_fov}_organoid_masks.tiff"
-mask_path = input_dir
+
+organoid_mask_path = input_dir / f"{well_fov}_organoid_mask.tiff"
 
 
 # ## Set up images, paths and functions
 
-# In[3]:
-
-
-if overwrite or not labels_path.exists():
-    image_extensions = {".tif", ".tiff"}
-    files = sorted(input_dir.glob("*"))
-    files = [str(x) for x in files if x.suffix in image_extensions]
-    # find the cytoplasmic channels in the image set
-    for f in files:
-        if "405" in f:
-            nuc = io.imread(f)
-        elif "488" in f:
-            cyto1 = io.imread(f)
-        elif "555" in f:
-            cyto2 = io.imread(f)
-        elif "640" in f:
-            cyto3 = io.imread(f)
-
-    cyto = np.maximum(
-        cyto1,
-        cyto2,
-    )
-
-
 # In[4]:
 
 
-# supress warning
-warnings.filterwarnings(
-    "ignore",
-    message="Low IOU threshold, ignoring mask.",
-    category=UserWarning,
-    module="cellSAM.sam_inference",
+image_extensions = {".tif", ".tiff"}
+files = sorted(input_dir.glob("*"))
+files = [str(x) for x in files if x.suffix in image_extensions]
+# get the nuclei image
+for f in files:
+    if "555" in f:
+        cell = io.imread(f)
+
+
+# In[5]:
+
+
+elevation_map_threshold_signal = skimage.filters.gaussian(cell, sigma=3)
+threshold = skimage.filters.threshold_otsu(elevation_map_threshold_signal)
+elevation_map_threshold_signal[elevation_map_threshold_signal < threshold] = 0
+elevation_map_threshold_signal[elevation_map_threshold_signal > 0] = 1
+elevation_map_threshold_signal = skimage.morphology.dilation(
+    elevation_map_threshold_signal,
+    skimage.morphology.disk(1),
+)
+
+organoid_mask = fill_holes_in_mask(
+    elevation_map_threshold_signal, compartment="organoid"
 )
 
 
-# organoid_mask = cellsam_pipeline(
-#     cyto,
-#     use_wsi=False,
-#     low_contrast_enhancement=False,
-#     gauge_cell_size=False,
-# )
-use_GPU = torch.cuda.is_available()
-# Load the model
-model = models.CellposeModel(gpu=use_GPU)
-organoid_mask, details, _ = model.eval(cyto)
+# clean each object independently and write to a fresh label image
+cleaned_labels = np.zeros_like(organoid_mask, dtype=organoid_mask.dtype)
+for organoid_mask_label in np.unique(organoid_mask):
+    if organoid_mask_label == 0:
+        continue
+    tmp_mask = organoid_mask == organoid_mask_label
+    tmp_mask = skimage.morphology.remove_small_holes(tmp_mask, area_threshold=10_000)
+    # closing
+    tmp_mask = skimage.morphology.closing(
+        tmp_mask, footprint=skimage.morphology.disk(3)
+    )
+    # tmp_mask = skimage.morphology.remove_small_objects(tmp_mask, min_size=100)
+    cleaned_labels[tmp_mask] = organoid_mask_label
+organoid_mask = cleaned_labels
 
 
-organoid_mask[organoid_mask > 0] = 1
-organoid_mask = scipy.ndimage.binary_fill_holes(organoid_mask)
-organoid_mask = scipy.ndimage.label(organoid_mask)[0]
-tifffile.imwrite(labels_path, organoid_mask.astype(np.uint16))
-
+organoid_mask = remove_small_objects_preserve_labels(organoid_mask, min_size=500)
 if in_notebook:
-    # Visualize results
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(15, 5))
     plt.subplot(121)
-    plt.imshow(cyto, cmap="inferno")
-    plt.title("Cyto Slice")
+    plt.imshow(cell, cmap="inferno")
     plt.axis("off")
+    plt.title("cell")
     plt.subplot(122)
     plt.imshow(organoid_mask, cmap="nipy_spectral")
-    plt.title("CellSAM Segmentation Mask")
     plt.axis("off")
+    plt.title("organoid masks")
     plt.show()
+# save the labels
+tifffile.imwrite(organoid_mask_path, organoid_mask.astype(np.uint16))
+
+
+# In[6]:
+
+
+stop_profiling(
+    start_time=start_time,
+    start_mem=start_mem,
+    feature_type="Segmentation",
+    well_fov=well_fov,
+    patient_id=patient,
+    channel="NoChannel",
+    compartment="organoid",
+    CPU_GPU="GPU",
+    output_file_dir=pathlib.Path(
+        f"{input_dir.parent}/run_stats/{well_fov}_organoid_segmentation.parquet"
+    ),
+)
