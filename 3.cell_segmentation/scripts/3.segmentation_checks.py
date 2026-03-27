@@ -4,8 +4,10 @@
 # In[1]:
 
 
+import argparse
 import os
 import pathlib
+import sys
 
 import pandas as pd
 import tifffile
@@ -123,3 +125,4 @@ df.groupby("patient_id").agg(
         "missing_mask_count": ["sum"],
     }
 ).reset_index()
+

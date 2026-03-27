@@ -4,8 +4,10 @@
 # In[1]:
 
 
+import argparse
 import os
 import pathlib
+import sys
 
 import numpy as np
 import pandas as pd
@@ -106,3 +108,4 @@ if len(empty_masks) > 0:
     print(f"There are {len(empty_masks)} empty masks found.")
 else:
     print("No empty masks found.")
+
