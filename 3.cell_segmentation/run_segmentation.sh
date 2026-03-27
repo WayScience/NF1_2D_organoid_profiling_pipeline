@@ -55,9 +55,9 @@ while IFS= read -r line; do
 
     } &> "$log_file"
 
-# done < "$input_file"
-done < <(tac "$input_file")
-
+done < "$input_file"
+# done < <(tac "$input_file")
+#
 
 conda deactivate
 

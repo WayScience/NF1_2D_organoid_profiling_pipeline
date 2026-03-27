@@ -38,7 +38,7 @@ illumcorr_paths = [
 masks = ["organoid_mask", "nuclei_mask", "cell_mask"]
 
 
-# In[29]:
+# In[4]:
 
 
 expected_count = 0
@@ -58,6 +58,8 @@ for patient in tqdm.tqdm(patient_ids, desc="Patients"):
         )
         well_fovs = [wf.stem for wf in illum_corr_path.glob("*")]
         for well_fov in well_fovs:
+            if well_fov == "run_stats":
+                continue
             for mask in masks:
                 mask_path = pathlib.Path(
                     f"{image_base_dir}/data/{patient}/2D_analysis/{illum_corr_sub_path}/{well_fov}/{well_fov}_{mask}.tiff"
@@ -70,7 +72,6 @@ for patient in tqdm.tqdm(patient_ids, desc="Patients"):
                     twoD_method = "middle_n"
                 expected_count += 1
                 if not mask_path.exists():
-                    missing_list.append(mask_path)
                     missing_count += 1
                     missing_dict["patient_id"].append(patient)
                     missing_dict["twoD_method"].append(twoD_method)
@@ -79,7 +80,7 @@ for patient in tqdm.tqdm(patient_ids, desc="Patients"):
                     missing_dict["missing_mask_path"].append(mask_path)
 
 
-# In[30]:
+# In[5]:
 
 
 print(f"Total number of expected masks: {expected_count:,}")
@@ -87,7 +88,7 @@ print(f"Total number of masks found: {(expected_count - missing_count):,}")
 print(f"Total number of missing masks: {missing_count:,}")
 
 
-# In[32]:
+# In[6]:
 
 
 df = pd.DataFrame(missing_dict)
@@ -101,7 +102,7 @@ df.reset_index(drop=True, inplace=True)
 df.head()
 
 
-# In[33]:
+# In[7]:
 
 
 # write to the loadfile
@@ -112,10 +113,13 @@ with open(loadfile_path, "w") as f:
         f.write(f"{row['patient_id']}\t{row['well_fov']}\t{row['twoD_method']}\n")
 
 
-# In[34]:
+# In[8]:
 
 
-df.groupby("patient_id").count()
-
-
-# In[ ]:
+df.groupby("patient_id").agg(
+    {
+        "well_fov": ["nunique"],
+        "twoD_method": ["nunique"],
+        "missing_mask_count": ["sum"],
+    }
+).reset_index()

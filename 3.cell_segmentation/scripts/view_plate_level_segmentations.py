@@ -12,9 +12,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tifffile
-from arg_parsing_utils import check_for_missing_args, parse_args
-from file_reading import read_zstack_image
-from notebook_init_utils import bandicoot_check, init_notebook
+from image_analysis_2D.file_utils.arg_parsing_utils import (
+    check_for_missing_args,
+    parse_args,
+)
+from image_analysis_2D.file_utils.file_reading import read_zstack_image
+from image_analysis_2D.file_utils.notebook_init_utils import (
+    bandicoot_check,
+    init_notebook,
+)
 from skimage import exposure
 
 root_dir, in_notebook = init_notebook()
@@ -233,7 +239,7 @@ red_lut[:, 0] = np.linspace(0, 1, 256)  # Red
 red_lut[0] = [0, 0, 0]
 
 
-# In[ ]:
+# In[5]:
 
 
 input_subparent_names = [
@@ -243,80 +249,81 @@ input_subparent_names = [
 ]
 
 
-# In[6]:
+# In[ ]:
 
 
-for patient in tqdm.tqdm(
-    patients, desc="Generating platemaps for patients", unit="patient"
-):
-    for subparent_name in input_subparent_names:
-        input_dir = pathlib.Path(
-            f"{image_base_dir}/data/{patient}/2D_analysis/{subparent_name}/"
-        ).resolve(strict=True)
-        # get the well_fov paths
+# for patient in tqdm.tqdm(
+#     patients, desc="Generating platemaps for patients", unit="patient"
+# ):
+#     for subparent_name in input_subparent_names:
+#         input_dir = pathlib.Path(
+#             f"{image_base_dir}/data/{patient}/2D_analysis/{subparent_name}/"
+#         ).resolve(strict=True)
+#         # get the well_fov paths
 
-        well_fovs = input_dir.glob("*")
-        image_available_wells = {}
-        for well_fov_path in well_fovs:
-            if not well_fov_path.is_dir():
-                continue
-            well_fov_name = well_fov_path.stem.split("-")[0]
-            if well_fov_name not in image_available_wells:
-                image_available_wells[well_fov_name] = well_fov_path
+#         well_fovs = input_dir.glob("*")
+#         image_available_wells = {}
+#         for well_fov_path in well_fovs:
+#             if not well_fov_path.is_dir():
+#                 continue
+#             well_fov_name = well_fov_path.stem.split("-")[0]
+#             if well_fov_name not in image_available_wells:
+#                 image_available_wells[well_fov_name] = well_fov_path
 
-        # plot and save the plate view
-        channels_to_show = ["405", "488", "555", "640"]
-        masks_to_show = ["organoid", "nuclei", "cell"]
+#         # plot and save the plate view
+#         channels_to_show = ["405", "488", "555", "640"]
 
-        for channel in tqdm.tqdm(
-            channels_to_show, desc="Generating channel platemaps", leave=False
-        ):
-            if channel == "405":
-                lut = cyan_lut
-                channel_title = "Hoechst - 405nm"
+#         for channel in tqdm.tqdm(
+#             channels_to_show, desc="Generating channel platemaps", leave=False
+#         ):
+#             if channel == "405":
+#                 lut = cyan_lut
+#                 channel_title = "Hoechst - 405nm"
 
-            elif channel == "488":
-                lut = green_lut
-                channel_title = "Endoplasmic Reticulum - 488nm"
+#             elif channel == "488":
+#                 lut = green_lut
+#                 channel_title = "Endoplasmic Reticulum - 488nm"
 
-            elif channel == "555":
-                lut = magenta_lut
-                channel_title = "AGP - 555nm"
+#             elif channel == "555":
+#                 lut = magenta_lut
+#                 channel_title = "AGP - 555nm"
 
-            elif channel == "640":
-                lut = red_lut
-                channel_title = "Mitochondria - 640nm"
+#             elif channel == "640":
+#                 lut = red_lut
+#                 channel_title = "Mitochondria - 640nm"
 
-            else:
-                lut = None
-            fig = plot_plate_overview(
-                plate=patient,
-                image_sub_string_to_search=channel,
-                title_for_substring=channel_title,
-                available_wells=image_available_wells,
-                layout="96",
-                skip_outer_wells=True,
-                lut=lut,
-                contrast_enhance=True,  # Enable contrast enhancement
-                clip_limit=0.03,  # Adjust this value (0-1)
-            )
-            # Save using matplotlib
-            output_path = (
-                figures_path / f"{subparent_name}" / f"{patient}_platemap_{channel}.png"
-            )
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(
-                output_path,
-                dpi=600,
-                bbox_inches="tight",
-                facecolor="white",
-                edgecolor="none",
-            )
-            plt.close(fig)
+#             else:
+#                 lut = None
+#             fig = plot_plate_overview(
+#                 plate=patient,
+#                 image_sub_string_to_search=channel,
+#                 title_for_substring=channel_title,
+#                 available_wells=image_available_wells,
+#                 layout="96",
+#                 skip_outer_wells=True,
+#                 lut=lut,
+#                 contrast_enhance=True,  # Enable contrast enhancement
+#                 clip_limit=0.03,  # Adjust this value (0-1)
+#             )
+#             # Save using matplotlib
+#             output_path = (
+#                 figures_path / f"{subparent_name}" / "raw" / f"{patient}_platemap_{channel}.png"
+#             )
+#             output_path.parent.mkdir(parents=True, exist_ok=True)
+#             fig.savefig(
+#                 output_path,
+#                 dpi=600,
+#                 bbox_inches="tight",
+#                 facecolor="white",
+#                 edgecolor="none",
+#             )
+#             plt.close(fig)
 
 
-# In[7]:
+# In[ ]:
 
+
+masks_to_show = ["organoid", "nuclei", "cell"]
 
 for patient in tqdm.tqdm(
     patients, desc="Generating platemaps for patients", unit="patient"
@@ -353,10 +360,14 @@ for patient in tqdm.tqdm(
                 layout="96",
                 skip_outer_wells=True,
                 image_color_map="nipy_spectral",
+                contrast_enhance=False,  # Disable contrast enhancement for masks
             )
             # Save using matplotlib
             output_path = (
-                figures_path / f"{subparent_name}" / f"{patient}_platemap_{mask}.png"
+                figures_path
+                / f"{subparent_name}"
+                / "mask"
+                / f"{patient}_platemap_{mask}.png"
             )
             output_path.parent.mkdir(parents=True, exist_ok=True)
             fig.savefig(
@@ -367,3 +378,6 @@ for patient in tqdm.tqdm(
                 edgecolor="none",
             )
             plt.close(fig)
+
+
+# In[ ]:
