@@ -54,6 +54,7 @@ def results_to_log(
 def run_cellprofiler_parallel(
     plate_info_dictionary: dict,
     run_name: str,
+    run_with_apptainer_interactive: Optional[pathlib.Path | None] = None,
 ) -> None:
     """
     This function utilizes multi-processing to run CellProfiler pipelines in parallel.
@@ -92,17 +93,34 @@ def run_cellprofiler_parallel(
         pathlib.Path(path_to_output).mkdir(exist_ok=True, parents=True)
 
         # Build command for each plate
-        command = [
-            "cellprofiler",
-            "-c",
-            "-r",
-            "-p",
-            path_to_pipeline,
-            "-o",
-            path_to_output,
-            "-i",
-            path_to_images,
-        ]
+        if run_with_apptainer_interactive is None:
+            command = [
+                "cellprofiler",
+                "-c",
+                "-r",
+                "-p",
+                path_to_pipeline,
+                "-i",
+                path_to_input,
+                "-o",
+                path_to_output,
+            ]
+
+        elif run_with_apptainer_interactive is not None:
+            command = [
+                "apptainer",
+                "exec",
+                str(run_with_apptainer_interactive),
+                "cellprofiler",
+                "-c",
+                "-r",
+                "-p",
+                path_to_pipeline,
+                "-i",
+                path_to_input,
+                "-o",
+                path_to_output,
+            ]
         # add extension to command if using a plugin module in pipeline (must be include in dict)
         if "plugins_directory" in info:
             command.extend(["--plugins-directory", info["plugins_directory"]])
