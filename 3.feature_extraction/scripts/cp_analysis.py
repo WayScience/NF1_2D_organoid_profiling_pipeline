@@ -5,35 +5,40 @@
 
 # ## Import libraries
 
-# In[ ]:
+# In[1]:
 
 
 import os
 import pathlib
 import pprint
-import time
 
 import psutil
-from arg_parsing_utils import check_for_missing_args, parse_args
-from notebook_init_utils import bandicoot_check, init_notebook
-
-import cp_parallel
+from image_analysis_2D.cp_utils.cp_utils import run_cellprofiler
+from image_analysis_2D.featurization_utils.resource_profiling_utils import (
+    start_profiling,
+    stop_profiling,
+)
+from image_analysis_2D.file_utils.arg_parsing_utils import (
+    check_for_missing_args,
+    parse_args,
+)
+from image_analysis_2D.file_utils.notebook_init_utils import (
+    bandicoot_check,
+    init_notebook,
+)
 
 root_dir, in_notebook = init_notebook()
 image_base_dir = bandicoot_check(
     pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
 )
 
+if in_notebook:
+    import tqdm.notebook as tqdm
+else:
+    import tqdm
+
 
 # In[2]:
-
-
-# begin profiling of time, and memory
-start_time = time.time()
-start_memory = psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024)  # in MB
-
-
-# In[3]:
 
 
 if not in_notebook:
@@ -44,26 +49,27 @@ if not in_notebook:
         patient=patient,
         well_fov=well_fov,
     )
+
 else:
     print("Running in a notebook")
-    well_fov = "B3-3"
-    patient = "NF0040_T1"
+    well_fov = "C4-2"
+    patient = "NF0014_T1"
 
 
 max_projected_input = pathlib.Path(
-    f"{image_base_dir}/data/{patient}/2D_analysis/1a.zmax_proj_illum_correction/{well_fov}"
+    f"{image_base_dir}/data/{patient}/2D_analysis/0a.zmax_proj/{well_fov}"
 ).resolve(strict=True)
 middle_slice_input = pathlib.Path(
-    f"{image_base_dir}/data/{patient}/2D_analysis/1b.middle_slice_illum_correction/{well_fov}"
+    f"{image_base_dir}/data/{patient}/2D_analysis/0b.middle_slice/{well_fov}"
 ).resolve(strict=True)
 middle_n_input = pathlib.Path(
-    f"{image_base_dir}/data/{patient}/2D_analysis/1c.middle_n_slice_max_proj_illum_correction/{well_fov}"
+    f"{image_base_dir}/data/{patient}/2D_analysis/0c.middle_n_slice_max_proj/{well_fov}"
 ).resolve(strict=True)
 
 
 # ## Set paths and variables
 
-# In[4]:
+# In[3]:
 
 
 # set the run type for the parallelization
@@ -82,18 +88,18 @@ plate_name = f"{patient}_{well_fov}"  # Get the folder name as the plate name
 
 # ## Create dictionary to process data
 
-# In[5]:
+# In[4]:
 
 
 plate_info_dictionary = {}
 # create plate info dictionary with all parts of the CellProfiler CLI command to run in parallel
 for images_dir in [middle_slice_input, max_projected_input, middle_n_input]:
     if "zmax_proj" in str(images_dir):
-        output_path = f"{root_dir}/data/{patient}/2D_analysis/2a.cellprofiler_{str(images_dir.parent.name.split('_illum_correction')[0].split('1a.')[1])}_output/{well_fov}/"
+        output_path = f"{root_dir}/data/{patient}/2D_analysis/2a.cellprofiler_{str(images_dir.parent.name.split('0a.')[1])}_output/{well_fov}/"
     elif "middle_slice" in str(images_dir):
-        output_path = f"{root_dir}/data/{patient}/2D_analysis/2b.cellprofiler_{str(images_dir.parent.name.split('_illum_correction')[0].split('1b.')[1])}_output/{well_fov}/"
+        output_path = f"{root_dir}/data/{patient}/2D_analysis/2b.cellprofiler_{str(images_dir.parent.name.split('0b.')[1])}_output/{well_fov}/"
     elif "middle_n" in str(images_dir):
-        output_path = f"{root_dir}/data/{patient}/2D_analysis/2c.cellprofiler_{str(images_dir.parent.name.split('_illum_correction')[0].split('1c.')[1])}_output/{well_fov}/"
+        output_path = f"{root_dir}/data/{patient}/2D_analysis/2c.cellprofiler_{str(images_dir.parent.name.split('0c.')[1])}_output/{well_fov}/"
     for object_type in ["single_cell", "organoid"]:
         pipeline = (
             path_to_pipeline_sc
@@ -114,7 +120,7 @@ if in_notebook:
     pprint.pprint(plate_info_dictionary, indent=4)
 
 
-# In[6]:
+# In[5]:
 
 
 # check if there is a sqlite db already present, if so remove the run from the dictionary
@@ -139,26 +145,54 @@ if in_notebook:
 #
 # Note: This code cell was not ran as we prefer to perform CellProfiler processing tasks via `sh` file (bash script) which is more stable.
 
+# In[6]:
+
+
+try:
+    path_to_apptainer_image = pathlib.Path(
+        f"{root_dir}/environments/cellprofiler.sif"
+    ).resolve(strict=True)
+    print("Using apptainer image for CellProfiler run.")
+except FileNotFoundError:
+    print("No apptainer image found, running CellProfiler without apptainer.")
+    path_to_apptainer_image = None
+
+
 # In[7]:
 
 
-if len(plates_to_run) == 0:
-    print("All runs have already ran")
-else:
-    cp_parallel.run_cellprofiler_parallel(
-        plate_info_dictionary=plate_info_dictionary, run_name=run_name
-    )
+plate_name
 
 
 # In[8]:
 
 
-end_time = time.time()
-end_memory = psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024)  # in MB
-time_elapsed = end_time - start_time
-memory_used = end_memory - start_memory
-print(f"Time elapsed: {time_elapsed:.2f} seconds")
-print(f"Time elapsed: {time_elapsed / 60:.2f} minutes")
-print(f"Time elapsed: {time_elapsed / 3600:.2f} hours")
-print(f"Memory used: {memory_used:.2f} MB")
-print(f"Memory used: {memory_used / 1024:.2f} GB")
+if len(plates_to_run) == 0:
+    print("All runs have already ran")
+else:
+    for plate_name, plate_info in tqdm.tqdm(plates_to_run.items()):
+        start_time, start_memory = start_profiling()
+        run_cellprofiler(
+            path_to_pipeline=plate_info["path_to_pipeline"],
+            path_to_input=plate_info["path_to_images"],
+            path_to_output=plate_info["path_to_output"],
+            run_with_apptainer_interactive=path_to_apptainer_image,
+            log_file_name=f"{plate_name}.log",
+        )
+        # move the log file to the output directory
+        stop_profiling(
+            start_time=start_time,
+            well_fov=well_fov,
+            patient_id=patient,
+            feature_type="cellprofiler2D",
+            channel="All",
+            compartment="All",
+            CPU_GPU="CPU",
+            output_file_dir=pathlib.Path(
+                f"{root_dir}/data/{patient}/2D_analysis/run_stats/{plate_name}_{well_fov}_profiling_stats.parquet"
+            ),
+            start_mem=start_memory,
+        )
+
+
+# In[ ]:
