@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[3]:
 
 
-import argparse
 import os
 import pathlib
-import sys
 
 import numpy as np
 import pandas as pd
 import tifffile
-from arg_parsing_utils import check_for_missing_args, parse_args
-from notebook_init_utils import bandicoot_check, init_notebook
+from image_analysis_2D.file_utils.arg_parsing_utils import (
+    check_for_missing_args,
+    parse_args,
+)
+from image_analysis_2D.file_utils.notebook_init_utils import (
+    bandicoot_check,
+    init_notebook,
+)
 
 root_dir, in_notebook = init_notebook()
 if in_notebook:
@@ -25,7 +29,7 @@ image_base_dir = bandicoot_check(
 )
 
 
-# In[2]:
+# In[4]:
 
 
 patient_ids_path = pathlib.Path(f"{root_dir}/data/patient_IDs.txt").resolve(strict=True)
@@ -42,7 +46,7 @@ else:
     validated_masks_list = []
 
 
-# In[ ]:
+# In[5]:
 
 
 illumcorr_paths = [
@@ -53,7 +57,7 @@ illumcorr_paths = [
 masks = ["organoid_mask", "nuclei_mask", "cell_mask"]
 
 
-# In[ ]:
+# In[6]:
 
 
 expected_count = 0
@@ -92,7 +96,7 @@ print(
 print(f"{present_count / expected_count:.2%} of expected masks were validated.")
 
 
-# In[5]:
+# In[7]:
 
 
 df = pd.DataFrame({"validated_masks": validated_masks_list})
@@ -108,4 +112,3 @@ if len(empty_masks) > 0:
     print(f"There are {len(empty_masks)} empty masks found.")
 else:
     print("No empty masks found.")
-

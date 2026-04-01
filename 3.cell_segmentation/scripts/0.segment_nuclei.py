@@ -5,15 +5,13 @@
 # The end goals is to segment cell and extract morphology features from cellprofiler.
 # These masks must be imported into cellprofiler to extract features.
 
-# ## import libraries 
+# ## import libraries
 
 # In[1]:
 
 
-import argparse
 import os
 import pathlib
-import sys
 
 import matplotlib.pyplot as plt
 
@@ -137,8 +135,11 @@ if in_notebook:
     plt.show()
 
 
-# In[6]:
+# In[ ]:
 
+
+# this calls to stop profiling and cellects information about the run
+# and associates metadata with the run by collecting it in the args
 
 stop_profiling(
     start_time=start_time,
@@ -151,6 +152,5 @@ stop_profiling(
     CPU_GPU="GPU",
     output_file_dir=pathlib.Path(
         f"{input_dir.parent}/run_stats/{well_fov}_nuclei_segmentation.parquet"
-    ),
+    ),  # write path for the run stats parquet file
 )
-

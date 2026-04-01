@@ -5,16 +5,13 @@
 # The end goal is to segment cells and extract morphology features from CellProfiler.
 # These masks must be imported into CellProfiler to extract features.
 
-# ## import libraries 
+# ## import libraries
 
 # In[1]:
 
 
-import argparse
 import os
 import pathlib
-import sys
-from typing import Union
 
 import cucim
 import cupy
@@ -115,7 +112,7 @@ for f in files:
         cell = io.imread(f)
 
 
-# In[5]:
+# In[ ]:
 
 
 elevation_map_threshold_signal = skimage.filters.gaussian(cell, sigma=3)
@@ -143,7 +140,6 @@ for organoid_mask_label in np.unique(organoid_mask):
     tmp_mask = skimage.morphology.closing(
         tmp_mask, footprint=skimage.morphology.disk(3)
     )
-    # tmp_mask = skimage.morphology.remove_small_objects(tmp_mask, min_size=100)
     cleaned_labels[tmp_mask] = organoid_mask_label
 organoid_mask = cleaned_labels
 
@@ -180,4 +176,3 @@ stop_profiling(
         f"{input_dir.parent}/run_stats/{well_fov}_organoid_segmentation.parquet"
     ),
 )
-

@@ -4,11 +4,9 @@
 # In[1]:
 
 
-import argparse
 import os
 import pathlib
 import string
-import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,7 +57,7 @@ patients_file_path = pathlib.Path(f"{root_dir}/data/patient_IDs.txt").resolve(
 patients = pd.read_csv(patients_file_path, header=None)[0].tolist()
 
 
-# In[3]:
+# In[ ]:
 
 
 def plot_plate_overview(
@@ -202,9 +200,6 @@ def plot_plate_overview(
             # Remove ticks
             ax.set_xticks([])
             ax.set_yticks([])
-
-    # Adjust layout to minimize white space
-    # plt.tight_layout(rect=[0, 0, 1, 0.97])
 
     return fig
 
@@ -383,4 +378,3 @@ for patient in tqdm.tqdm(
                 edgecolor="none",
             )
             plt.close(fig)
-

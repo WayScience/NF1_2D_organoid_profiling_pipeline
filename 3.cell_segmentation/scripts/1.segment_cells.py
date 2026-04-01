@@ -5,16 +5,13 @@
 # The end goal is to segment cells and extract morphology features from CellProfiler.
 # These masks must be imported into CellProfiler to extract features.
 
-# ## import libraries 
+# ## import libraries
 
 # In[1]:
 
 
-import argparse
 import os
 import pathlib
-import sys
-from typing import Union
 
 import cucim
 import cupy
@@ -120,7 +117,7 @@ for f in files:
         nuclei_mask = io.imread(f)
 
 
-# In[5]:
+# In[ ]:
 
 
 cell = np.array(cell)
@@ -135,7 +132,6 @@ elevation_map_threshold_signal = skimage.morphology.dilation(
     skimage.morphology.disk(1),
 )
 
-# nuclei_mask = np.array(nuclei_mask)
 cell = skimage.filters.butterworth(
     cell,
     cutoff_frequency_ratio=0.08,
@@ -262,4 +258,3 @@ stop_profiling(
         f"{input_dir.parent}/run_stats/{well_fov}_cell_segmentation.parquet"
     ),
 )
-
