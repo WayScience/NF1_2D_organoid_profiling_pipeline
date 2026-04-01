@@ -32,7 +32,7 @@ umap_cp_df <- list()
 for (plate in names(output_umap_files)) {
     # Find the umap file associated with the plate
     umap_file <- umap_files[stringr::str_detect(umap_files, plate)]
-    
+
     # Load in the umap data
     df <- readr::read_tsv(
         umap_file,
@@ -46,7 +46,7 @@ for (plate in names(output_umap_files)) {
             "Metadata_ZSlice" = "c",
         )
     )
-    
+
     # Create the Metadata_treatment_dose column and ZSlice_Number column
     df <- df %>%
         mutate(
@@ -64,7 +64,7 @@ for (plate in names(output_umap_files)) {
         left_join(well_counts, by = "Metadata_Well")
 
     # Append the data frame to the list
-    umap_cp_df[[plate]] <- df 
+    umap_cp_df[[plate]] <- df
 }
 
 # Define a custom color palette
@@ -89,13 +89,13 @@ color_palette <- c(
   "Ketotifen_1" = "#98df8a",          # Light green
   "Nilotinib_1" = "#c5b0d5",          # Lavender
   "Digoxin_1" = "#ffb3e6",            # Light lavender pink
-  "STAURO_10" = "#b46a61"             # Darker brown for 10
+  "Staurosporine_10" = "#b46a61"             # Darker brown for 10
 )
 
 # Define the Viridis colors manually
 viridis_colors <- c(
-    "#440154", "#482878", "#3e4a8a", "#31688e", 
-    "#26828e", "#1f9e89", "#5ec962", "#b3d86e", 
+    "#440154", "#482878", "#3e4a8a", "#31688e",
+    "#26828e", "#1f9e89", "#5ec962", "#b3d86e",
     "#fde724"
 )
 
@@ -116,7 +116,7 @@ for (plate in names(umap_cp_df)) {
             legend.position = "left"
         )
     )
-    
+
     ggsave(treatment_output_file, treatment_gg, dpi = 500, height = 6, width = 10)
 
     # UMAP for well cell count
@@ -135,7 +135,7 @@ for (plate in names(umap_cp_df)) {
     )
 
     ggsave(well_cell_count_output_file, well_cell_count_gg, dpi = 500, height = 6, width = 10)
-    
+
     # UMAP for ZSlice_Number in green gradient
     zslice_output_file <- paste0(output_umap_files[[plate]], "_zslice.png")
 

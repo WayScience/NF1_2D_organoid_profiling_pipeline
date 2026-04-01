@@ -2,183 +2,100 @@
 # coding: utf-8
 
 # This notebook focuses on trying to find a way to segment cells within organoids properly.
-# The end goals is to segment cell and extract morphology features from cellprofiler.
-# These masks must be imported into cellprofiler to extract features.
+# The end goal is to segment cells and extract morphology features from CellProfiler.
+# These masks must be imported into CellProfiler to extract features.
 
-# In[ ]:
+# ## import libraries
+
+# In[1]:
 
 
+import os
 import pathlib
-import sys
 
+import cucim
+import cupy
+import cupyx
+import cupyx.scipy.ndimage
 import matplotlib.pyplot as plt
 
 # Import dependencies
 import numpy as np
+import scipy
 import skimage
 import tifffile
-import torch
-from cellpose import models
-from skimage import io
+from image_analysis_2D.file_utils.arg_parsing_utils import (
+    check_for_missing_args,
+    parse_args,
+)
+from image_analysis_2D.file_utils.notebook_init_utils import (
+    bandicoot_check,
+    init_notebook,
+)
+from image_analysis_2D.file_utils.profiling_utils import start_profiling, stop_profiling
+from image_analysis_2D.segmentation_utils.segmentation_processing import (
+    fill_holes_in_mask,
+    remove_small_objects_preserve_labels,
+)
+from skimage import io, segmentation
 
-# check if in a jupyter notebook
-try:
-    cfg = get_ipython().config
-    in_notebook = True
-except NameError:
-    in_notebook = False
+root_dir, in_notebook = init_notebook()
+image_base_dir = bandicoot_check(
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
+)
 
-
-# Get the current working directory
-cwd = pathlib.Path.cwd()
-
-if (cwd / ".git").is_dir():
-    root_dir = cwd
-
-else:
-    root_dir = None
-    for parent in cwd.parents:
-        if (parent / ".git").is_dir():
-            root_dir = parent
-            break
-
-# Check if a Git root directory was found
-if root_dir is None:
-    raise FileNotFoundError("No Git root directory found.")
-
-sys.path.append(f"{root_dir}/utils/")
-
-from parsable_args import parse_segmentation_args
 
 # In[2]:
 
 
-def segment_with_diameter(
-    img: np.ndarray,
-    model: models.Cellpose,
-    diameter: int,
-    z_axis: int = 0,
-    channels: tuple = [1, 0],
-    min_diameter: int = 200,  # in pixels, default is 250
-    diameter_step: int = 200,
-) -> tuple:
-    """
-    Recursively perform segmentation, stepping down through diameters by 200
-    until a valid label is found or the minimum diameter is reached.
-    This effectively performs a dynamic search for the largest detectable object
-    in the image.
-
-    Parameters
-    ----------
-    img : np.ndarray
-        The image to segment. Can be 3D in the format of (z, y, x).
-    model : models.Cellpose
-        The Cellpose model to use for segmentation.
-    diameter : int
-        The diameter to use for segmentation.
-        This is where the search starts.
-    z_axis : int, optional
-        The axis of the z-stack. Default is axis 0.
-    channels : tuple, optional
-        The channels to use for segmentation. Default is (1, 0).
-        Where 1 is the channel for the cytoplasm and 0 using no other channel.
-    min_diameter : int, optional
-        The minimum diameter to use for segmentation.
-        If the diameter is less than this, the function will return empty labels.
-        Default is 200 pixels.
-    diameter_step : int, optional
-        The step size to decrease the diameter by when no labels are found.
-        Default is 200 pixels.
-
-    Returns
-    -------
-    tuple
-        labels : np.ndarray
-            The labels of the segmented image.
-        details : dict
-            The details of the segmentation.
-        _ : None
-            Placeholder for additional return values.
-    """
-    if diameter < min_diameter:
-        print("Minimum diameter reached. Returning empty labels.")
-        zero_labels = np.zeros_like(img)
-        return zero_labels, None, None
-
-    labels, details, _ = model.eval(
-        img, channels=channels, z_axis=z_axis, diameter=diameter
-    )
-
-    if labels is None:
-        print(f"Labels are empty for diameter {diameter}. Trying smaller diameter...")
-        return segment_with_diameter(
-            img, model, channels, z_axis, diameter - diameter_step
-        )
-
-    return labels, details, _
+start_time, start_mem = start_profiling()
 
 
-# test the function with three cylinders each with a different diameter
-def test_segment_with_diameter():
-    diameters = [100, 250, 400, 600, 800, 1000]
-    z_depth = 1  # No z-depth for 2D images
-    for diameter in diameters:
-        img = np.zeros((1500, 1500), dtype=np.uint8)
-        rr, cc = skimage.draw.disk((500, 500), diameter / 2)
-        img[rr, cc] = 255
+# ## parse args and set paths
 
-        labels, details, _ = segment_with_diameter(
-            img,
-            model=models.CellposeModel(gpu=use_GPU, model_type="cyto3"),
-            diameter=diameter,
-            z_axis=z_depth,
-            channels=(1, 0),
-        )
-        # 100 should return empty labels
-        if diameter == 100:
-            assert np.all(labels == 0), (
-                f"Labels should be empty for diameter {diameter}"
-            )
-        else:
-            assert np.any(labels > 0), (
-                f"Labels should not be empty for diameter {diameter}"
-            )
+# If a notebook run the hardcoded paths.
+# However, if this is run as a script, the paths are set by the parsed arguments.
 
-
-if in_notebook:
-    # If running in a notebook, run the test
-    test_segment_with_diameter()
-
-
-# In[ ]:
+# In[3]:
 
 
 if not in_notebook:
-    args_dict = parse_segmentation_args()
+    args_dict = parse_args()
     patient = args_dict["patient"]
     well_fov = args_dict["well_fov"]
     clip_limit = args_dict["clip_limit"]
     twoD_method = args_dict["twoD_method"]
+    check_for_missing_args(
+        patient=patient,
+        well_fov=well_fov,
+        clip_limit=clip_limit,
+        twoD_method=twoD_method,
+    )
 else:
     print("Running in a notebook")
-    patient = "NF0014"
-    well_fov = "C2-2"
-    clip_limit = 0.01
+    patient = "NF0014_T1"
+    well_fov = "C4-2"
+    clip_limit = 0.04
     twoD_method = "zmax"
 
-if twoD_method == "middle":
-    input_dir = pathlib.Path(
-        f"{root_dir}/data/{patient}/middle_slice_illum_correction/{well_fov}"
-    ).resolve(strict=True)
 
-elif twoD_method == "zmax":
+if twoD_method == "zmax":
     input_dir = pathlib.Path(
-        f"{root_dir}/data/{patient}/zmax_proj_illum_correction/{well_fov}"
+        f"{image_base_dir}/data/{patient}/2D_analysis/0a.zmax_proj/{well_fov}"
+    ).resolve(strict=True)
+elif twoD_method == "middle":
+    input_dir = pathlib.Path(
+        f"{image_base_dir}/data/{patient}/2D_analysis/0b.middle_slice/{well_fov}"
+    ).resolve(strict=True)
+elif twoD_method == "middle_n":
+    input_dir = pathlib.Path(
+        f"{image_base_dir}/data/{patient}/2D_analysis/0c.middle_n_slice_max_proj/{well_fov}"
     ).resolve(strict=True)
 else:
     raise ValueError(f"Unknown twoD_method: {twoD_method}")
 
-mask_path = input_dir
+
+organoid_mask_path = input_dir / f"{well_fov}_organoid_mask.tiff"
 
 
 # ## Set up images, paths and functions
@@ -189,90 +106,73 @@ mask_path = input_dir
 image_extensions = {".tif", ".tiff"}
 files = sorted(input_dir.glob("*"))
 files = [str(x) for x in files if x.suffix in image_extensions]
-
-
-# In[5]:
-
-
-# find the cytoplasmic channels in the image set
+# get the nuclei image
 for f in files:
-    if "405" in f:
-        pass
-    elif "488" in f:
-        pass
-    elif "555" in f:
-        cyto = io.imread(f)
-    elif "640" in f:
-        pass
-    elif "TRANS" in f:
-        pass
-    elif "mask" in f:
-        pass
-    else:
-        print(f"Unknown channel: {f}")
+    if "555" in f:
+        cell = io.imread(f)
+
+
+# In[ ]:
+
+
+elevation_map_threshold_signal = skimage.filters.gaussian(cell, sigma=3)
+threshold = skimage.filters.threshold_otsu(elevation_map_threshold_signal)
+elevation_map_threshold_signal[elevation_map_threshold_signal < threshold] = 0
+elevation_map_threshold_signal[elevation_map_threshold_signal > 0] = 1
+elevation_map_threshold_signal = skimage.morphology.dilation(
+    elevation_map_threshold_signal,
+    skimage.morphology.disk(1),
+)
+
+organoid_mask = fill_holes_in_mask(
+    elevation_map_threshold_signal, compartment="organoid"
+)
+
+
+# clean each object independently and write to a fresh label image
+cleaned_labels = np.zeros_like(organoid_mask, dtype=organoid_mask.dtype)
+for organoid_mask_label in np.unique(organoid_mask):
+    if organoid_mask_label == 0:
+        continue
+    tmp_mask = organoid_mask == organoid_mask_label
+    tmp_mask = skimage.morphology.remove_small_holes(tmp_mask, area_threshold=10_000)
+    # closing
+    tmp_mask = skimage.morphology.closing(
+        tmp_mask, footprint=skimage.morphology.disk(3)
+    )
+    cleaned_labels[tmp_mask] = organoid_mask_label
+organoid_mask = cleaned_labels
+
+
+organoid_mask = remove_small_objects_preserve_labels(organoid_mask, min_size=500)
+if in_notebook:
+    plt.figure(figsize=(15, 5))
+    plt.subplot(121)
+    plt.imshow(cell, cmap="inferno")
+    plt.axis("off")
+    plt.title("cell")
+    plt.subplot(122)
+    plt.imshow(organoid_mask, cmap="nipy_spectral")
+    plt.axis("off")
+    plt.title("organoid masks")
+    plt.show()
+# save the labels
+tifffile.imwrite(organoid_mask_path, organoid_mask.astype(np.uint16))
 
 
 # In[6]:
 
 
-# # Use butterworth FFT filter to remove high frequency noise :)
-cyto = skimage.filters.butterworth(
-    cyto,
-    cutoff_frequency_ratio=0.05,
-    high_pass=False,
-    order=1,
-    squared_butterworth=True,
+stop_profiling(
+    start_time=start_time,
+    start_mem=start_mem,
+    feature_type="Segmentation",
+    well_fov=well_fov,
+    patient_id=patient,
+    channel="NoChannel",
+    compartment="organoid",
+    CPU_GPU="GPU",
+    output_file_dir=pathlib.Path(
+        f"{input_dir.parent}/run_stats/{well_fov}_organoid_segmentation.parquet"
+    ),
 )
-
-# add a guassian blur to the image
-imgs = skimage.filters.gaussian(cyto, sigma=1)
-if in_notebook:
-    # plot the nuclei and the cyto channels
-    plt.figure(figsize=(10, 10))
-    plt.subplot(121)
-    plt.imshow(cyto, cmap="gray")
-    plt.title("Raw cyto")
-    plt.axis("off")
-    plt.subplot(122)
-    plt.imshow(imgs, cmap="gray")
-    plt.title("Butterworth filtered cyto")
-    plt.axis("off")
-    plt.show()
-
-
-# In[7]:
-
-
-use_GPU = torch.cuda.is_available()
-# Load the model
-model_name = "cyto3"
-model = models.CellposeModel(gpu=use_GPU, model_type=model_name)
-
-
-# Perform segmentation of whole organoids with initial diameter of 750
-labels, details, _ = segment_with_diameter(
-    cyto,
-    model=model,
-    channels=[1, 0],
-    z_axis=0,
-    diameter=1000,  # initial diameter in pixels
-    min_diameter=200,  # in pixels, default is 250
-    diameter_step=200,  # in pixels, default is 200
-)
-# Save the labels
-labels_path = input_dir / f"{well_fov}_organoid_masks.tiff"
-tifffile.imwrite(labels_path, labels.astype(np.uint16))
-
-
-# In[8]:
-
-
-if in_notebook:
-    plt.figure(figsize=(10, 10))
-    plt.subplot(121)
-    plt.imshow(cyto, cmap="gray")
-    plt.title("raw")
-    plt.subplot(122)
-    plt.imshow(labels, cmap="nipy_spectral")
-    plt.title("mask")
-    plt.show()

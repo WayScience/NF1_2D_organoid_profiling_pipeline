@@ -8,66 +8,77 @@
 # In[1]:
 
 
-import argparse
 import logging
+import os
 import pathlib
+import shutil
 import uuid
 
 import duckdb
 import pandas as pd
 import tqdm
+from arg_parsing_utils import check_for_missing_args, parse_args
 
 # cytotable will merge objects from SQLite file into single cells and save as parquet file
 from cytotable import convert, presets
+from notebook_init_utils import bandicoot_check, init_notebook
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 
 # Set the logging level to a higher level to avoid outputting unnecessary errors from config file in convert function
 logging.getLogger().setLevel(logging.ERROR)
-try:
-    cfg = get_ipython().config
-    in_notebook = True
-except NameError:
-    in_notebook = False
+root_dir, in_notebook = init_notebook()
+image_base_dir = bandicoot_check(
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot/NF1_organoid_data")).resolve(),
+    root_dir,
+)
 
 
 # In[2]:
 
 
 if not in_notebook:
-    print("Running as script")
-    # set up arg parser
-    parser = argparse.ArgumentParser(description="Segment the nuclei of a tiff image")
+    args_dict = parse_args()
+    patient = args_dict["patient"]
 
-    parser.add_argument(
-        "--patient",
-        type=str,
-        help="Patient ID",
+    check_for_missing_args(
+        patient=patient,
     )
-
-    args = parser.parse_args()
-    patient = args.patient
 else:
     print("Running in a notebook")
     patient = "SARCO361_T1"
 
-middle_slice_input = pathlib.Path(
-    f"../../data/{patient}/cellprofiler_middle_slice_output/"
-).resolve(strict=True)
+
 max_projected_input = pathlib.Path(
-    f"../../data/{patient}/cellprofiler_zmax_proj_output/"
+    f"{image_base_dir}/data/{patient}/2D_analysis/2a.cellprofiler_zmax_proj_output/"
+).resolve(strict=True)
+middle_slice_input = pathlib.Path(
+    f"{image_base_dir}/data/{patient}/2D_analysis/2b.cellprofiler_middle_slice_output/"
+).resolve(strict=True)
+middle_n_slice_input = pathlib.Path(
+    f"{image_base_dir}/data/{patient}/2D_analysis/2c.cellprofiler_middle_n_slice_max_proj_output/"
 ).resolve(strict=True)
 
 # directory for processed data
-output_dir = pathlib.Path(f"../../data/{patient}/0.converted/").resolve()
+output_dir = pathlib.Path(
+    f"{root_dir}/data/{patient}/2D_analysis/3.converted/"
+).resolve()
 output_dir.mkdir(parents=True, exist_ok=True)
-middle_slice_sc_output = pathlib.Path(output_dir, "middle_slice_sc.parquet").resolve()
+
 max_projected_sc_output = pathlib.Path(output_dir, "max_projected_sc.parquet").resolve()
+middle_slice_sc_output = pathlib.Path(output_dir, "middle_slice_sc.parquet").resolve()
+middle_n_slice_sc_output = pathlib.Path(
+    output_dir, "middle_n_slice_sc.parquet"
+).resolve()
+
+max_projected_organoid_output = pathlib.Path(
+    output_dir, "max_projected_organoid.parquet"
+).resolve()
 middle_slice_organoid_output = pathlib.Path(
     output_dir, "middle_slice_organoid.parquet"
 ).resolve()
-max_projected_organoid_output = pathlib.Path(
-    output_dir, "max_projected_organoid.parquet"
+middle_n_slice_organoid_output = pathlib.Path(
+    output_dir, "middle_n_slice_organoid.parquet"
 ).resolve()
 
 
@@ -90,7 +101,7 @@ dest_datatype = "parquet"
 
 
 well_fov_dict = {}
-for sqlite_dir in [middle_slice_input, max_projected_input]:
+for sqlite_dir in [max_projected_input, middle_slice_input, middle_n_slice_input]:
     twoD_type = sqlite_dir.name.split("_out")[0].split("cellprofiler_")[1]
     well_fov_dict[twoD_type] = {}
     sqlites = list(sqlite_dir.rglob("*sqlite"))
@@ -109,14 +120,15 @@ for sqlite_dir in [middle_slice_input, max_projected_input]:
 
 
 output_dict_of_dfs = {}
-for sqlite_dir in [middle_slice_input, max_projected_input]:
+for sqlite_dir in [max_projected_input, middle_slice_input, middle_n_slice_input]:
+    print(sqlite_dir)
     output_dict_of_dfs[sqlite_dir.name.split("_out")[0].split("cellprofiler_")[1]] = {
         "df_list": [],
     }
 output_dict_of_dfs
 
 
-# In[5]:
+# In[ ]:
 
 
 total = 0
@@ -127,6 +139,8 @@ for featurization_type in well_fov_dict.keys():
         sqlite_file = file_info["image_path"]
         total += 1
         # convert the sqlite file to a single cell parquet file
+        run_info_dir = pathlib.Path(f"cytotable_runinfo/{uuid.uuid4().hex}").resolve()
+
         try:
             df = convert(
                 sqlite_file,
@@ -137,44 +151,64 @@ for featurization_type in well_fov_dict.keys():
                 dest_path=f"{well_fov_dict[featurization_type][well_fov]['output_dir']}_sc.parquet",
                 parsl_config=Config(
                     executors=[HighThroughputExecutor()],
-                    run_dir=f"cytotable_runinfo/{uuid.uuid4().hex}",
+                    run_dir=str(run_info_dir),
                 ),
             )
             output_dict_of_dfs[featurization_type]["df_list"].append(
                 f"{well_fov_dict[featurization_type][well_fov]['output_dir']}_sc.parquet"
             )
+            # remove the temporary run info directory
+            if run_info_dir.exists():
+                shutil.rmtree(run_info_dir)
         except Exception as e:
             errors += 1
-            print(f"Error processing {sqlite_file}: {e}")
+            if not "An existing file or directory was provided as dest_path" in str(e):
+                print(f"Error processing {sqlite_file}: {e}")
+            if run_info_dir.exists():
+                shutil.rmtree(run_info_dir)
             continue
+
+
+# remove any straggling run info directories
+cytotable_runinfo_dir = pathlib.Path("cytotable_runinfo")
+if cytotable_runinfo_dir.exists():
+    shutil.rmtree(cytotable_runinfo_dir)
 print(f"Total files processed: {total}")
 print(f"Total errors encountered: {errors}")
 
 
-# In[6]:
+# In[ ]:
 
 
 output_dict_of_dfs = {
+    "zmax_proj": {
+        "df_list": [
+            x
+            for x in pathlib.Path(
+                f"{image_base_dir}/data/{patient}/2D_analysis/3.converted/zmax_proj/"
+            ).rglob("*.parquet")
+        ]
+    },
     "middle_slice": {
         "df_list": [
             x
             for x in pathlib.Path(
-                f"../../data/{patient}/0.converted/middle_slice/"
+                f"{image_base_dir}/data/{patient}/2D_analysis/3.converted/middle_slice/"
             ).rglob("*.parquet")
         ]
     },
-    "zmax_proj": {
+    "middle_n_slice": {
         "df_list": [
             x
-            for x in pathlib.Path(f"../../data/{patient}/0.converted/zmax_proj/").rglob(
-                "*.parquet"
-            )
+            for x in pathlib.Path(
+                f"{image_base_dir}/data/{patient}/2D_analysis/3.converted/middle_n_slice_max_proj/"
+            ).glob("*.parquet")
         ]
     },
 }
 
 
-# In[7]:
+# In[ ]:
 
 
 # read in the dataframes and concatenate them in place
@@ -218,14 +252,17 @@ for featurization_type in output_dict_of_dfs.keys():
     output_dict_of_dfs[featurization_type]["df"] = output_dict_of_dfs[
         featurization_type
     ]["df"].rename(columns={"Image_Metadata_Well": "Metadata_Well"})
-
-    if featurization_type == "middle_slice":
+    if featurization_type == "zmax_proj":
+        output_dict_of_dfs[featurization_type]["df"].to_parquet(
+            max_projected_sc_output, index=False
+        )
+    elif featurization_type == "middle_slice":
         output_dict_of_dfs[featurization_type]["df"].to_parquet(
             middle_slice_sc_output, index=False
         )
-    elif featurization_type == "zmax_proj":
+    elif featurization_type == "middle_n_slice":
         output_dict_of_dfs[featurization_type]["df"].to_parquet(
-            max_projected_sc_output, index=False
+            middle_n_slice_sc_output, index=False
         )
     print(
         f"Saved {featurization_type} data to {output_dict_of_dfs[featurization_type]['df'].shape[0]} rows in {output_dict_of_dfs[featurization_type]['df'].shape[1]} columns"
@@ -234,18 +271,50 @@ for featurization_type in output_dict_of_dfs.keys():
 
 # ## Extract organoid only profiles
 
-# In[8]:
+# ## Set paths and variables
+
+# In[ ]:
+
+
+# preset configurations based on typical CellProfiler outputs
+preset = "cellprofiler_sqlite_pycytominer"
+
+# update preset to include site metadata and cell counts
+joins = presets.config["cellprofiler_sqlite_pycytominer"]["CONFIG_JOINS"].replace(
+    "Image_Metadata_Well,",
+    "Image_Metadata_Well, Image_Metadata_Site, Image_Count_Cells,",
+)
+
+# type of file output from cytotable (currently only parquet)
+dest_datatype = "parquet"
+
+
+well_fov_dict = {}
+for sqlite_dir in [max_projected_input, middle_slice_input, middle_n_slice_input]:
+    twoD_type = sqlite_dir.name.split("_out")[0].split("cellprofiler_")[1]
+    well_fov_dict[twoD_type] = {}
+    sqlites = list(sqlite_dir.rglob("*organoid*"))
+    sqlites.sort()  # sort to ensure consistent order
+    for file_path in sqlites:
+        well_fov = file_path.parent.stem
+        well_fov_dict[twoD_type][well_fov] = {
+            "sqlite_path": file_path,
+            "output_dir": output_dir / twoD_type / f"{well_fov}",
+        }
+
+
+# In[ ]:
 
 
 output_dict_of_dfs = {}
-for sqlite_dir in [middle_slice_input, max_projected_input]:
+for sqlite_dir in [max_projected_input, middle_slice_input, middle_n_slice_input]:
     output_dict_of_dfs[sqlite_dir.name.split("_out")[0].split("cellprofiler_")[1]] = {
         "df_list": [],
     }
 output_dict_of_dfs
 
 
-# In[9]:
+# In[ ]:
 
 
 total = 0
@@ -255,7 +324,7 @@ for featurization_type in well_fov_dict.keys():
     for well_fov, file_info in tqdm.tqdm(well_fov_dict[featurization_type].items()):
         well = well_fov.split("-")[0]
         fov = well_fov.split("-")[1]
-        sqlite_file = file_info["image_path"]
+        sqlite_file = file_info["sqlite_path"]
         total += 1
         try:
             # Create a DuckDB connection
@@ -281,7 +350,7 @@ for featurization_type in well_fov_dict.keys():
             continue
 
 
-# In[10]:
+# In[ ]:
 
 
 # read in the dataframes and concatenate them in place
@@ -297,14 +366,19 @@ for featurization_type in output_dict_of_dfs.keys():
     output_dict_of_dfs[featurization_type]["df"] = output_dict_of_dfs[
         featurization_type
     ]["df"].dropna(subset=["Metadata_ImageNumber"])
-    if featurization_type == "middle_slice":
-        output_dict_of_dfs[featurization_type]["df"].to_parquet(
-            middle_slice_organoid_output, index=False
-        )
-    elif featurization_type == "zmax_proj":
+    if featurization_type == "zmax_proj":
         output_dict_of_dfs[featurization_type]["df"].to_parquet(
             max_projected_organoid_output, index=False
         )
+    elif featurization_type == "middle_slice":
+        output_dict_of_dfs[featurization_type]["df"].to_parquet(
+            middle_slice_organoid_output, index=False
+        )
+    elif featurization_type == "middle_n_slice_max_proj":
+        output_dict_of_dfs[featurization_type]["df"].to_parquet(
+            middle_n_slice_organoid_output, index=False
+        )
+
     print(
         f"Saved {featurization_type} data to {output_dict_of_dfs[featurization_type]['df'].shape[0]} rows in {output_dict_of_dfs[featurization_type]['df'].shape[1]} columns"
     )

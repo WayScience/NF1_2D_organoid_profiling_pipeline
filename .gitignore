@@ -185,5 +185,7 @@ cython_debug/
 #.idea/
 
 data/*
+3.cell_segmentation/results/*
 4.preprocess_features/notebooks/cytotable_runinfo*
 4.preprocess_features/scripts/cytotable_runinfo*
+3.cell_segmentation/figures/platemaps/*
