@@ -1,0 +1,36 @@
+name: GFF_segmentation_2D
+
+channels:
+  - conda-forge
+  - defaults
+  - pytorch
+
+dependencies:
+  - conda-forge::python=3.11
+  - conda-forge::ipykernel
+  - conda-forge::jupyter
+  - conda-forge::nbconvert
+  - conda-forge::nb_conda_kernels
+  - conda-forge::pip
+  - conda-forge::numpy<2.0
+  - conda-forge::matplotlib
+  - conda-forge::pandas
+  - conda-forge::scipy
+  - conda-forge::scikit-learn
+  - conda-forge::scikit-image
+  - conda-forge::papermill
+  - conda-forge::opencv
+  - conda-forge::tifffile
+  - conda-forge::pyarrow
+  - pip:
+      - cupy-cuda11x
+      - cucim-cu11
+      - torch
+      - torchvision
+      - tifffile
+      # - git+https://github.com/vanvalenlab/cellSAM.git
+      - cellpose>4.0
+      - -e ../utils
+
+
+
