@@ -22,7 +22,7 @@ To perform both tasks as mentioned above, use the [update_and_visualize.sh scrip
 
 _NOTE_: There could be issues with running the R script in terminal (like issues with saving with `ggsave`), so please be prepared for any troubleshooting or just use the jupyter notebook by itself with the R environment.
 
-## For this use case we already have these image data processed. To process the data run the preprocessing from the 3D image based profiling module.
+For this use case, we already have the image data processed. To process the data, run the preprocessing from the 3D image-based profiling module.
 
 
 ```bash
