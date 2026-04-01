@@ -50,7 +50,8 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 # set n
 n = 3
-
+# set n (number of z-slices total including the middle slice)
+n = 3
 
 # In[5]:
 
