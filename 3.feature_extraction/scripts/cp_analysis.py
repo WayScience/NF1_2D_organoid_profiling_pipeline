@@ -85,6 +85,8 @@ path_to_pipeline_organoid = pathlib.Path(
 # Get the plate name from the folder name
 plate_name = f"{patient}_{well_fov}"  # Get the folder name as the plate name
 
+output_base_dir = f"{root_dir}"
+
 
 # ## Create dictionary to process data
 
@@ -95,11 +97,11 @@ plate_info_dictionary = {}
 # create plate info dictionary with all parts of the CellProfiler CLI command to run in parallel
 for images_dir in [middle_slice_input, max_projected_input, middle_n_input]:
     if "zmax_proj" in str(images_dir):
-        output_path = f"{root_dir}/data/{patient}/2D_analysis/2a.cellprofiler_{str(images_dir.parent.name.split('0a.')[1])}_output/{well_fov}/"
+        output_path = f"{output_base_dir}/data/{patient}/2D_analysis/2a.cellprofiler_{str(images_dir.parent.name.split('0a.')[1])}_output/{well_fov}/"
     elif "middle_slice" in str(images_dir):
-        output_path = f"{root_dir}/data/{patient}/2D_analysis/2b.cellprofiler_{str(images_dir.parent.name.split('0b.')[1])}_output/{well_fov}/"
+        output_path = f"{output_base_dir}/data/{patient}/2D_analysis/2b.cellprofiler_{str(images_dir.parent.name.split('0b.')[1])}_output/{well_fov}/"
     elif "middle_n" in str(images_dir):
-        output_path = f"{root_dir}/data/{patient}/2D_analysis/2c.cellprofiler_{str(images_dir.parent.name.split('0c.')[1])}_output/{well_fov}/"
+        output_path = f"{output_base_dir}/data/{patient}/2D_analysis/2c.cellprofiler_{str(images_dir.parent.name.split('0c.')[1])}_output/{well_fov}/"
     for object_type in ["single_cell", "organoid"]:
         pipeline = (
             path_to_pipeline_sc
@@ -156,12 +158,6 @@ try:
 except FileNotFoundError:
     print("No apptainer image found, running CellProfiler without apptainer.")
     path_to_apptainer_image = None
-
-
-# In[7]:
-
-
-plate_name
 
 
 # In[8]:
