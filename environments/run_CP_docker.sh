@@ -21,3 +21,13 @@ alias cellprofiler="apptainer exec '$image_path' cellprofiler"
 # write the alias to bashrc and zshrc for future use
 echo "alias cellprofiler='apptainer exec '$image_path' cellprofiler'" >> ~/.bashrc
 echo "alias cellprofiler='apptainer exec '$image_path' cellprofiler'" >> ~/.zshrc
+
+export NF_OUTPUT_BASE_DIR="${SLURM_TMPDIR:-${SCRATCH:-$HOME}}/NF1_2D_outputs"
+mkdir -p "$NF_OUTPUT_BASE_DIR"
+
+# Bind paths into container namespace
+# /gpfs as read-only input, output as read-write
+export APPTAINER_BINDPATH="/gpfs:/gpfs:ro,${NF_OUTPUT_BASE_DIR}:${NF_OUTPUT_BASE_DIR}:rw"
+
+echo "Using NF_OUTPUT_BASE_DIR=$NF_OUTPUT_BASE_DIR"
+echo "Using APPTAINER_BINDPATH=$APPTAINER_BINDPATH"

@@ -22,6 +22,21 @@ fi
 
 PYTHON_BIN="$ENV_PATH/bin/python3"
 
+# we need to setup and redirect the output of cellprofiler to work with the HPC environment
+# the scratch space on the HPC is not discoverable by the container
+# so we need to make it discoverable by setting the output directory to be in the scratch space and then bind mounting it into the container
+# we only do this prior to using cellprofiler in a container
+export NF_OUTPUT_BASE_DIR="${SLURM_TMPDIR:-${SCRATCH:-$HOME}}/NF1_2D_outputs"
+mkdir -p "$NF_OUTPUT_BASE_DIR"
+
+# Bind paths into container namespace
+# /gpfs as read-only input, output as read-write
+export APPTAINER_BINDPATH="/gpfs:/gpfs:ro,${NF_OUTPUT_BASE_DIR}:${NF_OUTPUT_BASE_DIR}:rw"
+
+echo "Using NF_OUTPUT_BASE_DIR=$NF_OUTPUT_BASE_DIR"
+echo "Using APPTAINER_BINDPATH=$APPTAINER_BINDPATH"
+
+
 input_file="$git_root/3.feature_extraction/loadfiles/featurization_loadfile.txt"
 
 cd scripts/ || exit
