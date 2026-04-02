@@ -7,15 +7,22 @@
 #SBATCH --time=7-00:00:00
 #SBATCH --output="2D_featurization-%j.out"
 
-# initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
-module load miniforge
-conda init bash
-# activate the preprocessing environment
-conda activate gff_preprocessing_env
+jupyter nbconvert --to=script --FilesWriter.build_directory=scripts/ notebooks/*.ipynb
 
-jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
+git_root=$(git rev-parse --show-toplevel)
 
-input_file="../loadfiles/featurization_loadfile.txt"
+if [ -d "/scratch/alpine" ]; then
+    echo "Using Alpine environment"
+    ENV_PATH="/projects/mlippincott@xsede.org/software/uv/envs/nf1_uv_env/.venv"
+elif [ -d "/anvil" ]; then
+    ENV_PATH="/anvil/projects/x-bio260064/software/uv/envs/nf1_uv_env/.venv"
+else
+    ENV_PATH="$git_root/.venv"
+fi
+
+PYTHON_BIN="$ENV_PATH/bin/python3"
+
+input_file="$git_root/3.feature_extraction/loadfiles/featurization_loadfile.txt"
 
 cd scripts/ || exit
 # set the counter to zero
@@ -45,7 +52,7 @@ while IFS= read -r line; do
     # call cellprofiler to run the analysis
     # this script runs all three max projection methods in parallel
     {
-        python cp_analysis.py \
+        "$PYTHON_BIN" cp_analysis.py \
             --patient "$patient" \
             --well_fov "$well_fov"
     } &> "$log_file"
