@@ -193,6 +193,3 @@ else:
             ),
             start_mem=start_memory,
         )
-
-
-# In[ ]:

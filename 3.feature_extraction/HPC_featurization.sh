@@ -11,7 +11,7 @@
 module load miniforge
 conda init bash
 # activate the preprocessing environment
-conda activate GFF_cellprofiler
+conda activate gff_preprocessing_env
 
 jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
