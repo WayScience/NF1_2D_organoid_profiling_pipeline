@@ -1,6 +1,9 @@
 #!/bin/bash
 # from Dave Bunten
 # build and run cellprofiler from a docker container
+
+set -euo pipefail
+
 CPDOCKER_RUNDIR=$PWD
 CPDOCKER_IMAGE_NAME=cp-docker
 

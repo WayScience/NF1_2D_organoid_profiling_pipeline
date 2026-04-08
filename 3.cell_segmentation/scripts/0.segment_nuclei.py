@@ -29,7 +29,10 @@ from image_analysis_2D.file_utils.notebook_init_utils import (
     bandicoot_check,
     init_notebook,
 )
-from image_analysis_2D.file_utils.profiling_utils import start_profiling, stop_profiling
+from image_analysis_2D.file_utils.profiling_utils import (
+    start_resource_profiling,
+    stop_resource_profiling,
+)
 from skimage import io
 
 root_dir, in_notebook = init_notebook()
@@ -41,7 +44,7 @@ image_base_dir = bandicoot_check(
 # In[2]:
 
 
-start_time, start_mem = start_profiling()
+start_time, start_mem = start_resource_profiling()
 
 
 # ## parse args and set paths
@@ -141,7 +144,7 @@ if in_notebook:
 # this calls to stop profiling and cellects information about the run
 # and associates metadata with the run by collecting it in the args
 
-stop_profiling(
+stop_resource_profiling(
     start_time=start_time,
     start_mem=start_mem,
     feature_type="Segmentation",

@@ -1,13 +1,49 @@
 #!/bin/bash
-
-# initialize the correct shell for your machine to allow conda to work (see README for note on shell names)
-conda init bash
-# activate the preprocessing environment
-conda activate gff_preprocessing_env
-
 jupyter nbconvert --to script --output-dir=scripts/ notebooks/*.ipynb
 
-input_file="../loadfiles/featurization_loadfile.txt"
+git_root=$(git rev-parse --show-toplevel)
+
+if [ -d "/scratch/alpine" ]; then
+    echo "Using Alpine environment"
+    ENV_PATH="/projects/mlippincott@xsede.org/software/uv/envs/nf1_uv_env/.venv"
+
+    # we need to setup and redirect the output of cellprofiler to work with the HPC environment
+    # the scratch space on the HPC is not discoverable by the container
+    # so we need to make it discoverable by setting the output directory to be in the scratch space and then bind mounting it into the container
+    # we only do this prior to using cellprofiler in a container
+    export NF_OUTPUT_BASE_DIR="${SLURM_TMPDIR:-${SCRATCH:-$HOME}}/NF1_2D_outputs"
+    mkdir -p "$NF_OUTPUT_BASE_DIR"
+
+    # Bind paths into container namespace
+    # /gpfs as read-only input, output as read-write
+    export APPTAINER_BINDPATH="/gpfs:/gpfs:ro,${NF_OUTPUT_BASE_DIR}:${NF_OUTPUT_BASE_DIR}:rw"
+
+    echo "Using NF_OUTPUT_BASE_DIR=$NF_OUTPUT_BASE_DIR"
+    echo "Using APPTAINER_BINDPATH=$APPTAINER_BINDPATH"
+elif [ -d "/anvil" ]; then
+    ENV_PATH="/anvil/projects/x-bio260064/software/uv/envs/nf1_uv_env/.venv"
+
+    # we need to setup and redirect the output of cellprofiler to work with the HPC environment
+    # the scratch space on the HPC is not discoverable by the container
+    # so we need to make it discoverable by setting the output directory to be in the scratch space and then bind mounting it into the container
+    # we only do this prior to using cellprofiler in a container
+    export NF_OUTPUT_BASE_DIR="${SLURM_TMPDIR:-${SCRATCH:-$HOME}}/NF1_2D_outputs"
+    mkdir -p "$NF_OUTPUT_BASE_DIR"
+
+    # Bind paths into container namespace
+    # /gpfs as read-only input, output as read-write
+    export APPTAINER_BINDPATH="/gpfs:/gpfs:ro,${NF_OUTPUT_BASE_DIR}:${NF_OUTPUT_BASE_DIR}:rw"
+
+    echo "Using NF_OUTPUT_BASE_DIR=$NF_OUTPUT_BASE_DIR"
+    echo "Using APPTAINER_BINDPATH=$APPTAINER_BINDPATH"
+else
+    ENV_PATH="$git_root/.venv"
+fi
+
+PYTHON_BIN="$ENV_PATH/bin/python3"
+
+
+input_file="$git_root/3.feature_extraction/loadfiles/featurization_loadfile.txt"
 
 cd scripts/ || exit
 # set the counter to zero
@@ -37,7 +73,7 @@ while IFS= read -r line; do
     # call cellprofiler to run the analysis
     # this script runs all three max projection methods in parallel
     {
-        python cp_analysis.py \
+        "$PYTHON_BIN" cp_analysis.py \
             --patient "$patient" \
             --well_fov "$well_fov"
     } &> "$log_file"

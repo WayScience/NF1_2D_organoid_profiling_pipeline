@@ -5,7 +5,7 @@
 
 # ## Import libraries
 
-# In[1]:
+# In[9]:
 
 
 import os
@@ -15,8 +15,8 @@ import pprint
 import psutil
 from image_analysis_2D.cp_utils.cp_utils import run_cellprofiler
 from image_analysis_2D.featurization_utils.resource_profiling_utils import (
-    start_profiling,
-    stop_profiling,
+    start_resource_profiling,
+    stop_resource_profiling,
 )
 from image_analysis_2D.file_utils.arg_parsing_utils import (
     check_for_missing_args,
@@ -29,7 +29,8 @@ from image_analysis_2D.file_utils.notebook_init_utils import (
 
 root_dir, in_notebook = init_notebook()
 image_base_dir = bandicoot_check(
-    pathlib.Path(os.path.expanduser("~/mnt/bandicoot")).resolve(), root_dir
+    pathlib.Path(os.path.expanduser("~/mnt/bandicoot/NF1_organoid_data")).resolve(),
+    root_dir,
 )
 
 if in_notebook:
@@ -38,7 +39,7 @@ else:
     import tqdm
 
 
-# In[2]:
+# In[10]:
 
 
 if not in_notebook:
@@ -69,7 +70,7 @@ middle_n_input = pathlib.Path(
 
 # ## Set paths and variables
 
-# In[3]:
+# In[11]:
 
 
 # set the run type for the parallelization
@@ -90,7 +91,7 @@ output_base_dir = f"{root_dir}"
 
 # ## Create dictionary to process data
 
-# In[4]:
+# In[12]:
 
 
 plate_info_dictionary = {}
@@ -167,7 +168,7 @@ if len(plates_to_run) == 0:
     print("All runs have already ran")
 else:
     for plate_name, plate_info in tqdm.tqdm(plates_to_run.items()):
-        start_time, start_memory = start_profiling()
+        start_time, start_memory = start_resource_profiling()
         run_cellprofiler(
             path_to_pipeline=plate_info["path_to_pipeline"],
             path_to_input=plate_info["path_to_images"],
@@ -176,7 +177,7 @@ else:
             log_file_name=f"{plate_name}.log",
         )
         # move the log file to the output directory
-        stop_profiling(
+        stop_resource_profiling(
             start_time=start_time,
             well_fov=well_fov,
             patient_id=patient,

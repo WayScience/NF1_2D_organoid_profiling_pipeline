@@ -93,7 +93,8 @@ def run_cellprofiler_parallel(
         pathlib.Path(path_to_output).mkdir(exist_ok=True, parents=True)
 
         # Build command for each plate
-        command = [
+        command = (
+            [
                 "apptainer",
                 "exec",
                 str(run_with_apptainer_interactive),
@@ -106,7 +107,9 @@ def run_cellprofiler_parallel(
                 path_to_input,
                 "-o",
                 path_to_output,
-            ] if run_with_apptainer_interactive else [
+            ]
+            if run_with_apptainer_interactive
+            else [
                 "cellprofiler",
                 "-c",
                 "-r",
@@ -117,6 +120,7 @@ def run_cellprofiler_parallel(
                 "-o",
                 path_to_output,
             ]
+        )
         # add extension to command if using a plugin module in pipeline (must be include in dict)
         if "plugins_directory" in info:
             command.extend(["--plugins-directory", info["plugins_directory"]])

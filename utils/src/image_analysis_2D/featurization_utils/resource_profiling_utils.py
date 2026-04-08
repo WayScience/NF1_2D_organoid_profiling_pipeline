@@ -10,7 +10,7 @@ import pandas as pd
 import psutil
 
 
-def start_profiling() -> tuple[float, float]:
+def start_resource_profiling() -> tuple[float, float]:
     """
     Start memory and time profiling.
 
@@ -31,7 +31,7 @@ def start_profiling() -> tuple[float, float]:
     return start_time, start_mem
 
 
-def stop_profiling(
+def stop_resource_profiling(
     start_time: float,
     well_fov: str,
     patient_id: str,
@@ -52,7 +52,7 @@ def stop_profiling(
     Parameters
     ----------
     start_time : float
-        Unix timestamp returned by :func:`start_profiling`.
+        Unix timestamp returned by :func:`start_resource_profiling`.
     well_fov : str
         Well and field of view for the run.
     patient_id : str
@@ -69,7 +69,7 @@ def stop_profiling(
     output_file_dir : pathlib.Path
         File path to save the run-statistics Parquet file.
     start_mem : float, optional
-        Starting RSS in MB (from :func:`start_profiling`).  Included in
+        Starting RSS in MB (from :func:`start_resource_profiling`).  Included in
         the output for backward-compatibility but is **not** used for the
         peak-memory calculation.
 

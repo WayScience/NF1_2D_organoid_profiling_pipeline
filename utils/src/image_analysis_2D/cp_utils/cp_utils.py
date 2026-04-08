@@ -95,21 +95,8 @@ def run_cellprofiler(
             "w",
         ) as cellprofiler_output_file:
             # run CellProfiler pipeline
-            if run_with_apptainer_interactive is None:
-                command = [
-                    "cellprofiler",
-                    "-c",
-                    "-r",
-                    "-p",
-                    path_to_pipeline,
-                    "-i",
-                    path_to_input,
-                    "-o",
-                    path_to_output,
-                ]
-
-            elif run_with_apptainer_interactive is not None:
-                command = [
+            command = (
+                [
                     "apptainer",
                     "exec",
                     str(run_with_apptainer_interactive),
@@ -123,6 +110,19 @@ def run_cellprofiler(
                     "-o",
                     path_to_output,
                 ]
+                if run_with_apptainer_interactive
+                else [
+                    "cellprofiler",
+                    "-c",
+                    "-r",
+                    "-p",
+                    path_to_pipeline,
+                    "-i",
+                    path_to_input,
+                    "-o",
+                    path_to_output,
+                ]
+            )
 
             subprocess.run(
                 command,
