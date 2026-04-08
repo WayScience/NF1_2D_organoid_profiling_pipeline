@@ -93,8 +93,10 @@ def run_cellprofiler_parallel(
         pathlib.Path(path_to_output).mkdir(exist_ok=True, parents=True)
 
         # Build command for each plate
-        if run_with_apptainer_interactive is None:
-            command = [
+        command = [
+                "apptainer",
+                "exec",
+                str(run_with_apptainer_interactive),
                 "cellprofiler",
                 "-c",
                 "-r",
@@ -104,13 +106,7 @@ def run_cellprofiler_parallel(
                 path_to_input,
                 "-o",
                 path_to_output,
-            ]
-
-        elif run_with_apptainer_interactive is not None:
-            command = [
-                "apptainer",
-                "exec",
-                str(run_with_apptainer_interactive),
+            ] if run_with_apptainer_interactive else [
                 "cellprofiler",
                 "-c",
                 "-r",
