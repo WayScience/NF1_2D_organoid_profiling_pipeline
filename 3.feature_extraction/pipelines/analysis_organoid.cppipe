@@ -95,7 +95,12 @@ Groups:[module_num:4|svn_version:'Unknown'|variable_revision_number:2|show_windo
     Metadata category:Well
     Metadata category:Site
 
-MeasureColocalization:[module_num:5|svn_version:'Unknown'|variable_revision_number:5|show_window:False|notes:['Measure correlation/colocalization across images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectSizeShape:[module_num:5|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure area shape features from all objects using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select object sets to measure:Organoid
+    Calculate the Zernike features?:Yes
+    Calculate the advanced features?:Yes
+
+MeasureColocalization:[module_num:6|svn_version:'Unknown'|variable_revision_number:5|show_window:False|notes:['Measure correlation/colocalization across images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Set threshold as percentage of maximum intensity for the images:15.0
     Select where to measure correlation:Both
@@ -108,7 +113,7 @@ MeasureColocalization:[module_num:5|svn_version:'Unknown'|variable_revision_numb
     Calculate the Manders coefficients using Costes auto threshold?:Yes
     Method for Costes thresholding:Faster
 
-MeasureGranularity:[module_num:6|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure granularity metrics within images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureGranularity:[module_num:7|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure granularity metrics within images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Measure within objects?:Yes
     Select objects to measure:Organoid
@@ -117,11 +122,11 @@ MeasureGranularity:[module_num:6|svn_version:'Unknown'|variable_revision_number:
     Radius of structuring element:10
     Range of the granular spectrum:16
 
-MeasureObjectIntensity:[module_num:7|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure intensity metrics across all objects within all channels.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectIntensity:[module_num:8|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure intensity metrics across all objects within all channels.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Select objects to measure:Organoid
 
-MeasureObjectIntensityDistribution:[module_num:8|svn_version:'Unknown'|variable_revision_number:6|show_window:False|notes:['Measure object radial distribution metrics across all objects in all channels, using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectIntensityDistribution:[module_num:9|svn_version:'Unknown'|variable_revision_number:6|show_window:False|notes:['Measure object radial distribution metrics across all objects in all channels, using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Hidden:1
     Hidden:1
@@ -135,7 +140,7 @@ MeasureObjectIntensityDistribution:[module_num:8|svn_version:'Unknown'|variable_
     Number of bins:4
     Maximum radius:100
 
-MeasureObjectNeighbors:[module_num:9|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure the number of nuclei neighbors adjacent to each other.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectNeighbors:[module_num:10|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure the number of nuclei neighbors adjacent to each other.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select objects to measure:Organoid
     Select neighboring objects to measure:Organoid
     Method to determine neighbors:Adjacent
@@ -147,11 +152,6 @@ MeasureObjectNeighbors:[module_num:9|svn_version:'Unknown'|variable_revision_num
     Retain the image of objects colored by percent of touching pixels?:No
     Name the output image:PercentTouching
     Select colormap:Oranges
-
-MeasureObjectSizeShape:[module_num:10|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure area shape features from all objects using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
-    Select object sets to measure:Organoid
-    Calculate the Zernike features?:Yes
-    Calculate the advanced features?:No
 
 MeasureTexture:[module_num:11|svn_version:'Unknown'|variable_revision_number:7|show_window:False|notes:['Measure texture metrics across all images and objects across all channels using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
