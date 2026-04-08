@@ -2,7 +2,7 @@ CellProfiler Pipeline: http://www.cellprofiler.org
 Version:5
 DateRevision:426
 GitHash:
-ModuleCount:13
+ModuleCount:14
 HasImagePlaneDetails:False
 
 Images:[module_num:1|svn_version:'Unknown'|variable_revision_number:2|show_window:False|notes:['We use the Images module only when testing the pipeline in the GUI.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
@@ -101,13 +101,28 @@ Groups:[module_num:4|svn_version:'Unknown'|variable_revision_number:2|show_windo
     Metadata category:Well
     Metadata category:Site
 
-IdentifyTertiaryObjects:[module_num:5|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Detect cytoplasm.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+RelateObjects:[module_num:5|svn_version:'Unknown'|variable_revision_number:5|show_window:False|notes:[]|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Parent objects:Nuclei
+    Child objects:Cells
+    Calculate child-parent distances?:None
+    Calculate per-parent means for all child measurements?:No
+    Calculate distances to other parents?:No
+    Do you want to save the children with parents as a new object set?:No
+    Name the output object:RelateObjects
+    Parent name:None
+
+IdentifyTertiaryObjects:[module_num:6|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Detect cytoplasm.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select the larger identified objects:Cells
     Select the smaller identified objects:Nuclei
     Name the tertiary objects to be identified:Cytoplasm
     Shrink smaller object prior to subtraction?:Yes
 
-MeasureColocalization:[module_num:6|svn_version:'Unknown'|variable_revision_number:5|show_window:False|notes:['Measure correlation/colocalization across images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectSizeShape:[module_num:7|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure area shape features from all objects using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+    Select object sets to measure:Cells, Cytoplasm, Nuclei
+    Calculate the Zernike features?:Yes
+    Calculate the advanced features?:No
+
+MeasureColocalization:[module_num:8|svn_version:'Unknown'|variable_revision_number:5|show_window:False|notes:['Measure correlation/colocalization across images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Set threshold as percentage of maximum intensity for the images:15.0
     Select where to measure correlation:Both
@@ -120,7 +135,7 @@ MeasureColocalization:[module_num:6|svn_version:'Unknown'|variable_revision_numb
     Calculate the Manders coefficients using Costes auto threshold?:Yes
     Method for Costes thresholding:Faster
 
-MeasureGranularity:[module_num:7|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure granularity metrics within images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureGranularity:[module_num:9|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure granularity metrics within images and objects with default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Measure within objects?:Yes
     Select objects to measure:Cells, Cytoplasm, Nuclei
@@ -129,11 +144,11 @@ MeasureGranularity:[module_num:7|svn_version:'Unknown'|variable_revision_number:
     Radius of structuring element:10
     Range of the granular spectrum:16
 
-MeasureObjectIntensity:[module_num:8|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure intensity metrics across all objects within all channels.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectIntensity:[module_num:10|svn_version:'Unknown'|variable_revision_number:4|show_window:False|notes:['Measure intensity metrics across all objects within all channels.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:Brightfield, ER, Hoechst, Mito
     Select objects to measure:Cells, Cytoplasm, Nuclei
 
-MeasureObjectIntensityDistribution:[module_num:9|svn_version:'Unknown'|variable_revision_number:6|show_window:False|notes:['Measure object radial distribution metrics across all objects in all channels, using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectIntensityDistribution:[module_num:11|svn_version:'Unknown'|variable_revision_number:6|show_window:False|notes:['Measure object radial distribution metrics across all objects in all channels, using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Hidden:3
     Hidden:1
@@ -153,7 +168,7 @@ MeasureObjectIntensityDistribution:[module_num:9|svn_version:'Unknown'|variable_
     Number of bins:4
     Maximum radius:100
 
-MeasureObjectNeighbors:[module_num:10|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure the number of nuclei neighbors adjacent to each other.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureObjectNeighbors:[module_num:12|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure the number of nuclei neighbors adjacent to each other.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select objects to measure:Nuclei
     Select neighboring objects to measure:Nuclei
     Method to determine neighbors:Adjacent
@@ -166,12 +181,7 @@ MeasureObjectNeighbors:[module_num:10|svn_version:'Unknown'|variable_revision_nu
     Name the output image:PercentTouching
     Select colormap:Oranges
 
-MeasureObjectSizeShape:[module_num:11|svn_version:'Unknown'|variable_revision_number:3|show_window:False|notes:['Measure area shape features from all objects using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
-    Select object sets to measure:Cells, Cytoplasm, Nuclei
-    Calculate the Zernike features?:Yes
-    Calculate the advanced features?:No
-
-MeasureTexture:[module_num:12|svn_version:'Unknown'|variable_revision_number:7|show_window:False|notes:['Measure texture metrics across all images and objects across all channels using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+MeasureTexture:[module_num:13|svn_version:'Unknown'|variable_revision_number:7|show_window:False|notes:['Measure texture metrics across all images and objects across all channels using default parameters.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Select images to measure:AGP, Brightfield, ER, Hoechst, Mito
     Select objects to measure:Cells, Cytoplasm, Nuclei
     Enter how many gray levels to measure the texture at:256
@@ -179,7 +189,7 @@ MeasureTexture:[module_num:12|svn_version:'Unknown'|variable_revision_number:7|s
     Measure whole images or objects?:Both
     Texture scale to measure:3
 
-ExportToDatabase:[module_num:13|svn_version:'Unknown'|variable_revision_number:28|show_window:False|notes:['Export features to database to use with CytoTable for processing single-cells and organoids.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
+ExportToDatabase:[module_num:14|svn_version:'Unknown'|variable_revision_number:28|show_window:False|notes:['Export features to database to use with CytoTable for processing single-cells and organoids.']|batch_state:array([], dtype=uint8)|enabled:True|wants_pause:False]
     Database type:SQLite
     Database name:DefaultDB
     Add a prefix to table names?:No
