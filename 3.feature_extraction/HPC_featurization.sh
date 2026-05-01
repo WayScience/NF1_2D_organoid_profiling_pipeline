@@ -87,6 +87,7 @@ while IFS= read -r line; do
             --well_fov "$well_fov"
     } &> "$log_file"
 
+# done < <(tac "$input_file")
 done < "$input_file"
 
 cd ../ || exit
