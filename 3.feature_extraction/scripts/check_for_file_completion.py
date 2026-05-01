@@ -11,7 +11,10 @@ import pprint
 import pandas as pd
 
 # Get from arg_parsing_utils import check_for_missing_args, parse_args
-from notebook_init_utils import bandicoot_check, init_notebook
+from image_analysis_2D.file_utils.notebook_init_utils import (
+    bandicoot_check,
+    init_notebook,
+)
 
 root_dir, in_notebook = init_notebook()
 image_base_dir = bandicoot_check(
